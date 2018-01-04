@@ -1,2 +1,5 @@
 this is non-bare central git repository
 configured with git config receive.denyCurrentBranch updateInstead
+
+NOTE: changes are in .git after add + committ no need in push on gpuhps
+MORE: push doesnot work for this repository on gpuhps since .git/config has no remote section
