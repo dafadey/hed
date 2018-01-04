@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "string fn=\"$1\";" > $$.asy
+cat plot_poly.asy >> $$.asy
+asy $$.asy
+mv -f $$.eps $1.eps
+rm -f $$.asy

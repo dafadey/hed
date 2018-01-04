@@ -1,0 +1,9 @@
+#!/bin/bash
+SONAME=libsimpledraw_glfw3.so
+rm -rf ${SONAME}
+rm -rf ../lib/${SONAME}
+rm -rf font.o
+objcopy -I binary -O elf64-x86-64 --binary-architecture i386 font.dat font.o
+#g++ -O3 --std=c++11 -fPIC -lpthread -lglfw -lGL -shared simpledraw2d_glfw3.cpp font.o -Wl,-soname,${SONAME} -o ${SONAME}
+ g++ -O3 --std=c++11 -fPIC -lpthread -I/home/dan/distr/mesa-13/install/include -I/home/dan/distr/glfw3/build/include -L/home/dan/distr/glfw3/build/src -lglfw -Wl,-rpath=/home/dan/distr/glfw3/build/src -L/home/dan/distr/mesa-13/install/lib -lGL -Wl,-rpath=/home/dan/distr/mesa-13/install/lib -shared simpledraw2d_glfw3.cpp font.o -Wl,-soname,${SONAME} -o ${SONAME}
+mv ${SONAME} ../lib/

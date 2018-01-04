@@ -1,0 +1,14 @@
+#!/bin/bash
+MY_TOOLS="/home/dan/tools"
+
+rm -f tserver
+g++ --std=c++11 ${MY_TOOLS}/fadey_server/server.cpp ${MY_TOOLS}/fadey_server/soc.cpp tserver.cpp -O3 -I${MY_TOOLS}/nvml/include/ -I${MY_TOOLS}/fadey_server/ -lnvidia-ml -lpthread -o tserver
+
+rm -f libtclient.so
+g++ --std=c++11 -fPIC -shared ${MY_TOOLS}/fadey_server/soc.cpp tclient.cpp -O3 -I${MY_TOOLS}/fadey_server/ -lpthread -Wl,-soname,libtclient.so -o libtclient.so
+
+rm -f test
+g++ test_client.cpp -L./ -Wl,-rpath=`pwd`/ -ltclient -o test
+
+rm -f massive_test
+g++ massive_test.cpp -L./ -Wl,-rpath=`pwd`/ -ltclient -o massive_test

@@ -1,0 +1,2 @@
+#!/bin/bash
+ g++ -O3 --std=c++11 -fPIC -lpthread -lglfw -lGL -shared simpledraw2D.cpp -Wl,-soname,libsimpledraw.so.1 -o libsimpledraw.so.1.1

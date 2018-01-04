@@ -1,0 +1,29 @@
+#!/bin/bash
+g++ -g -O0 -fPIC -shared primitives.cpp svg.cpp -Wl,-soname,libsvg1.so -o svg1.so
+res1=$?
+g++ -g -O0 -fPIC -shared elements.cpp geometry.cpp triangulate.cpp mesh.cpp -Wl,-soname,libmesh1.so -o mesh1.so
+res2=$?
+function mklink {
+	if [ -L `pwd`/../lib/lib$1.so ]; then
+		rm `pwd`/../lib/lib$1.so
+	fi
+	if [ -f `pwd`/../lib/lib$1.so ]; then
+		rm `pwd`/../lib/lib$1.so
+  fi
+  ln -s `pwd`/$1.so `pwd`/../lib/lib$1.so
+}
+
+if [[ ${res1} = 0 && ${res2} = 0 ]]; then
+	echo "all good installing lib to tools"
+	if [ ! -d ../include/mesh1 ]; then
+		mkdir ../include/mesh1	
+	fi
+	rm -rf ../include/mesh1/*
+	for i in `ls | grep h$`; do
+		ln -s `pwd`/${i} `pwd`/../include/mesh1/${i}
+	done
+	mklink svg1
+	mklink mesh1
+else
+	echo "build broken, skipping installation"
+fi

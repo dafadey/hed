@@ -1,0 +1,6 @@
+#!/bin/bash
+rm -f dbg
+g++ -O3 --std=c++11 dbg.cpp ../*.cpp -I../ -o dbg
+rm -f *.dat
+./dbg
+asy plot.asy -f pdf

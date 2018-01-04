@@ -1,0 +1,9 @@
+#!/bin/bash
+if [ -z "$1" ]
+  then
+    echo "Provide test name. If progect is mylib, test file should be mylib_test.cpp so provide only \"mylib\". i.e. ./maketest mylib"
+		exit
+fi
+TOOLS=/home/dan/tools
+LIBS=-lzstream
+g++ ${1}_test.cpp --std=c++11 -O3 -L${TOOLS}/lib ${LIBS} -I${TOOLS}/include -Wl,-rpath=${TOOLS}/lib -o test

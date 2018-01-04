@@ -1,0 +1,2 @@
+#!/bin/bash
+ g++ -O3 --std=c++11 -fPIC -lz -shared zstream.cpp -Wl,-soname,libzstream.so.1 -o libzstream.so.1.1

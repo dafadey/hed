@@ -1,0 +1,2 @@
+#!/bin/bash
+ g++ -O3 --std=c++11 -fPIC -shared getGPUtemp.cpp -Wl,-soname,libgetGPUtemp.so.1 -o libgetGPUtemp.so.1.1
