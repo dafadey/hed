@@ -9,12 +9,19 @@ XY* newXY(double _x, double _y)
 
 ITRIANGLE* newITRIANGLE(XY* _p1, XY* _p2, XY* _p3)
 {
-  return new ITRIANGLE(_p1, _p2, _p3);
+  ITRIANGLE* newt = new ITRIANGLE(_p1, _p2, _p3);
+  _p1->tris.push_back(newt);
+  _p2->tris.push_back(newt);
+  _p3->tris.push_back(newt);
+  return newt;
 }
 
 IEDGE* newIEDGE(XY* _p1, XY* _p2)
 {
-  return new IEDGE(_p1, _p2);
+  IEDGE* newe = new IEDGE(_p1, _p2);
+  _p1->edges.push_back(newe);
+  _p2->edges.push_back(newe);
+  return newe;
 }
 
 double vp(const XY& p0, const XY& p1)

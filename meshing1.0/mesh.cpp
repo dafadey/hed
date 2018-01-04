@@ -1,5 +1,6 @@
 #include "mesh.h"
 #include "triangulate.h"
+#include <set>
 
 static double length2(const XY& a, const XY& b)
 {
@@ -356,4 +357,29 @@ void mesher::print_quality()
   auto q = check_quality();
   std::cout << "quality: savg=" << q[0] << ", ds=" << q[1] << ", smin=" << q[2] << ", smax=" << q[3] << "\n"
             << "         lavg=" << q[4] << ", dl=" << q[5] << ", lmin=" << q[6] << ", lmax=" << q[7] << "\n";
+}
+
+
+void mesher::build_edges()
+{
+  std::set<std::pair<XY*, XY*>> emap;
+  for(auto t : triangles)
+  {
+    #define MAKE_ORDERED_PAIR(X, Y) (std::make_pair(std::min(X, Y), std::max(X, Y)))
+    const std::pair<XY*, XY*> tedges[3]{MAKE_ORDERED_PAIR(t->p1, t->p2),
+                                        MAKE_ORDERED_PAIR(t->p2, t->p3),
+                                        MAKE_ORDERED_PAIR(t->p3, t->p1)};
+    for(const auto& e : tedges)
+    {
+      if(emap.find(e) != emap.end())
+        continue;
+      newIEDGE(e.first, e.second);
+      emap.insert(MAKE_ORDERED_PAIR(e.first, e.second));
+    }
+    #undef MAKE_ORDERED_PAIR
+  }
+  for(auto e : edges)
+  {
+    
+  }
 }

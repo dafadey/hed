@@ -9,7 +9,7 @@ struct IEDGE;
 struct XY
 {
   XY() {}
-  XY(double _x, double _y) : x(_x), y(_y) {}
+  XY(double _x, double _y) : x(_x), y(_y), tris(), edges() {}
   double x,y;
   std::vector<ITRIANGLE*> tris;
   std::vector<IEDGE*> edges;
@@ -32,7 +32,7 @@ XY* newXY(double _x, double _y);
 struct ITRIANGLE
 {
   ITRIANGLE() {}
-  ITRIANGLE(const XY* _p1, const XY* _p2, const XY* _p3) : p1((XY*) _p1), p2((XY*) _p2), p3((XY*) _p3) {}
+  ITRIANGLE(const XY* _p1, const XY* _p2, const XY* _p3) : p1((XY*) _p1), p2((XY*) _p2), p3((XY*) _p3), nbrs(), edges() {}
   XY* p1;
   XY* p2;
   XY* p3;
@@ -50,11 +50,11 @@ ITRIANGLE* newITRIANGLE(XY* _p1, XY* _p2, XY* _p3);
 struct IEDGE
 {
   IEDGE() {}
-  IEDGE(const XY* _p1, const XY* _p2) : p1((XY*)_p1), p2((XY*)_p2) {}
+  IEDGE(const XY* _p1, const XY* _p2) : p1((XY*)_p1), p2((XY*)_p2), t1(nullptr), t2(nullptr) {}
   XY* p1;
   XY* p2;
-  IEDGE* nb1;
-  IEDGE* nb2;
+  //IEDGE* nb1;
+  //IEDGE* nb2;
   ITRIANGLE* t1;
   ITRIANGLE* t2;
   XY centroid();
