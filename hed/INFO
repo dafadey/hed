@@ -1,0 +1,4 @@
+this is a collection of tools to simulate maxwell elecrodynamics plus electron hydrodynamics
+hed stands for hydro-electro-dynamics
+simulation is based on mesh graph and uses triangulated meshes
+CPU and GPU solvers are expected to be included in this project
