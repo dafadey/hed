@@ -386,8 +386,4 @@ void mesher::build_edges()
     }
     #undef MAKE_ORDERED_PAIR
   }
-  for(auto e : edges)
-  {
-    
-  }
 }
