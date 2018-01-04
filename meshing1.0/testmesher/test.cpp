@@ -27,7 +27,7 @@ int main()
       m.contours.back().points.push_back(newXY(pt.x, pt.y));
   }
   
-  double seed=1.0;
+  double seed=3.0;
   
   m.seed_geometry(seed);
   std::cout << "seed geometry is done\n";
@@ -39,7 +39,7 @@ int main()
   of.open("mesh.debug");
   of.close();
   
-  for(int i=0; i!=50; i++)
+  for(int i=0; i!=15; i++)
   {
     for(int j=0; j!=7; j++)
       m.improve_seeding(seed,seed*0.1);
