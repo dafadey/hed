@@ -1,7 +1,7 @@
 #!/bin/bash
 g++ -g -O0 -fPIC -shared primitives.cpp svg.cpp -Wl,-soname,libsvg1.so -o svg1.so
 res1=$?
-g++ -g -O0 -fPIC -shared elements.cpp geometry.cpp triangulate.cpp mesh.cpp -Wl,-soname,libmesh1.so -o mesh1.so
+g++ -g -O0 -fPIC -shared elements.cpp geometry.cpp triangulate.cpp mesh.cpp vectors.cpp -Wl,-soname,libmesh1.so -o mesh1.so
 res2=$?
 function mklink {
 	if [ -L `pwd`/../lib/lib$1.so ]; then

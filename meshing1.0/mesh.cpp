@@ -1,5 +1,6 @@
 #include "mesh.h"
 #include "triangulate.h"
+#include "vectors.h"
 #include <map>
 
 static double length2(const XY& a, const XY& b)
@@ -149,59 +150,6 @@ void mesher::clear_mesh()
     delete e;
   triangles.clear();
   edges.clear();
-}
-
-struct vec_type : public std::array<double, 2>
-{
-  vec_type() : std::array<double, 2>{{0,0}} {}
-  vec_type(const vec_type& v) : std::array<double, 2>{{v[0], v[1]}} {}
-  vec_type(double x, double y) : std::array<double, 2>{{x, y}} {}
-  vec_type(const XY* ppt) : std::array<double, 2>{{ppt->x, ppt->y}} {}
-  
-  
-  vec_type operator+(const vec_type& v)
-  {
-    vec_type res(*this);
-    res[0] += v[0];
-    res[1] += v[1];
-    return res;
-  }
-  vec_type operator-(const vec_type& v)
-  {
-    vec_type res(*this);
-    res[0] -= v[0];
-    res[1] -= v[1];
-    return res;
-  }
-  vec_type operator*(double a)
-  {
-    vec_type res(*this);
-    res[0] *= a;
-    res[1] *= a;
-    return res;
-  }
-  double norm2()
-  {
-    return (*this)[0] * (*this)[0] + (*this)[1] * (*this)[1];
-  }
-  double norm()
-  {
-    return sqrt((*this)[0] * (*this)[0] + (*this)[1] * (*this)[1]);
-  }
-};
-
-double vp(const vec_type& p0, const vec_type& p1)
-{
-	return p0[0] * p1[1] - p0[1] * p1[0];
-}
-double dp(const vec_type& p0, const vec_type& p1)
-{
-	return p0[0] * p1[0] + p0[1] * p1[1];
-}
-
-std::ostream& operator<<(std::ostream& s, const vec_type& v)
-{
-  return s << " " << v[0] << " " << v[1];
 }
 
 static std::array<XY*,2> getOppositeVerts(ITRIANGLE* t, XY* n)
