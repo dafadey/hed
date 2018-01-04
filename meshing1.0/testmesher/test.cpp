@@ -53,6 +53,9 @@ int main()
     of << IEDGE(t->p1, t->p2) << IEDGE(t->p2, t->p3) << IEDGE(t->p3, t->p1);
   of.close();
 
+  m.build_edges();
+  std::cout << "build edges is done\n";
+
   if(check_mesh(m.nodes, m.triangles, m.edges))
     std::cout << "MESH IS OK!\n";
   else
@@ -71,6 +74,10 @@ int main()
     of << *fe[1];
   }
   of.close();
-
+ 
+  std::cout << "=======+SUMMARY======\n\tnumber of triangles: " << m.triangles.size() << "\n"
+            << "\tnumber of edges:" << m.edges.size() << "\n"
+            << "\tnumber of nodes:" << m.nodes.size() << "\n";
+  
   return 0;
 }

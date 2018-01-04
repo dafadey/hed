@@ -1,6 +1,6 @@
 #include "mesh.h"
 #include "triangulate.h"
-#include <set>
+#include <map>
 
 static double length2(const XY& a, const XY& b)
 {
@@ -362,19 +362,27 @@ void mesher::print_quality()
 
 void mesher::build_edges()
 {
-  std::set<std::pair<XY*, XY*>> emap;
+  typedef std::array<XY*, 2> edge_graph_type;
+  std::map<edge_graph_type, IEDGE*> emap;
   for(auto t : triangles)
   {
-    #define MAKE_ORDERED_PAIR(X, Y) (std::make_pair(std::min(X, Y), std::max(X, Y)))
-    const std::pair<XY*, XY*> tedges[3]{MAKE_ORDERED_PAIR(t->p1, t->p2),
+    #define MAKE_ORDERED_PAIR(X, Y) (edge_graph_type{{std::min(X, Y), std::max(X, Y)}})
+    const edge_graph_type tedges[3]{MAKE_ORDERED_PAIR(t->p1, t->p2),
                                         MAKE_ORDERED_PAIR(t->p2, t->p3),
                                         MAKE_ORDERED_PAIR(t->p3, t->p1)};
     for(const auto& e : tedges)
     {
-      if(emap.find(e) != emap.end())
-        continue;
-      newIEDGE(e.first, e.second);
-      emap.insert(MAKE_ORDERED_PAIR(e.first, e.second));
+      auto it = emap.find(e);
+      if(it != emap.end())
+        it->second->t2 = t;
+      else
+      {
+        IEDGE* newe = newIEDGE(e[0], e[1]);
+        newe->t1 = t;
+        emap[e] = newe;
+        edges.push_back(newe);
+      }
+      
     }
     #undef MAKE_ORDERED_PAIR
   }
