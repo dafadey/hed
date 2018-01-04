@@ -1,0 +1,2 @@
+this is non-bare central git repository
+configured with git config receive.denyCurrentBranch updateInstead
