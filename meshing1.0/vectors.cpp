@@ -70,3 +70,9 @@ double dp(const vec_type& p0, const vec_type& p1)
 {
 	return p0[0] * p1[0] + p0[1] * p1[1];
 }
+
+std::ostream& operator<<(std::ostream& s, const vec_type& v)
+{
+  s << v[0] << " " << v[1];
+  return s;
+}
