@@ -13,6 +13,7 @@ struct XY
   double x,y;
   std::vector<ITRIANGLE*> tris;
   std::vector<IEDGE*> edges;
+  size_t id;
   XY operator+(const XY&);
   XY operator-(const XY&);
   XY operator*(const double&);
@@ -36,6 +37,7 @@ struct ITRIANGLE
   XY* p1;
   XY* p2;
   XY* p3;
+  size_t id;
   std::array<ITRIANGLE*,3> nbrs;
   std::array<IEDGE*,3> edges;
   XY* point(int /*point index 0, 1 or 2*/); //accesor
@@ -53,6 +55,7 @@ struct IEDGE
   IEDGE(const XY* _p1, const XY* _p2) : p1((XY*)_p1), p2((XY*)_p2), t1(nullptr), t2(nullptr) {}
   XY* p1;
   XY* p2;
+  size_t id;
   //IEDGE* nb1;
   //IEDGE* nb2;
   ITRIANGLE* t1;

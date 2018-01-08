@@ -47,16 +47,6 @@ double vec_type::norm() const
 
 // NON MEMBERS
 
-vec_type operator+(const vec_type& v1, const vec_type& v2)
-{
-  return vec_type (v1[0] + v2[0], v1[1] + v2[1]);
-}
-
-vec_type operator-(const vec_type& v1, const vec_type& v2)
-{
-  return vec_type (v1[0] - v2[0], v1[1] - v2[1]);
-}
-
 vec_type operator*(double a, const vec_type& v)
 {
   vec_type(a * v[0], a * v[1]);

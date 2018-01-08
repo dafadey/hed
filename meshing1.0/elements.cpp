@@ -117,7 +117,7 @@ XY ITRIANGLE::centroid()
 
 double ITRIANGLE::area()
 {
-	return vp(*p2 - *p1, *p3 - *p2);
+	return .5 * vp(*p2 - *p1, *p3 - *p2);
 }
 
 std::ostream& operator<<(std::ostream& s, const ITRIANGLE& t)

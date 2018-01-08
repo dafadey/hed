@@ -24,6 +24,8 @@ struct vec_type : public std::array<double, 2>
   double norm() const;
 };
 
+vec_type operator*(double, const vec_type&);
+
 double vp(const vec_type& p0, const vec_type& p1);
 
 double dp(const vec_type& p0, const vec_type& p1);
