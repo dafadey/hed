@@ -1,0 +1,27 @@
+#!/bin/bash
+toolspath=/home/dan/tools
+g++ -g -O0 -fPIC -shared -I${toolspath}/include/mesh1 postmeshing.cpp solver.cpp -L${toolspath}/lib -lmesh1 -lsvg1 -Wl,-soname,heds1.so -o heds1.so
+res1=$?
+function mklink {
+	if [ -L `pwd`/../lib/lib$1.so ]; then
+		rm `pwd`/../lib/lib$1.so
+	fi
+	if [ -f `pwd`/../lib/lib$1.so ]; then
+		rm `pwd`/../lib/lib$1.so
+  fi
+  ln -s `pwd`/$1.so `pwd`/../lib/lib$1.so
+}
+
+if [[ ${res1} = 0 ]]; then
+	echo "all good installing lib to tools"
+	if [ ! -d ../include/heds ]; then
+		mkdir ../include/heds
+	fi
+	rm -rf ../include/heds/*
+	for i in `ls | grep h$`; do
+		ln -s `pwd`/${i} `pwd`/../include/heds/${i}
+	done
+	mklink heds
+else
+	echo "build broken, skipping installation"
+fi

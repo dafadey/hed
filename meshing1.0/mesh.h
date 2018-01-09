@@ -3,7 +3,7 @@
 #include "elements.h"
 #include "searchgrid.h"
 
-struct mesher
+struct mesh
 {
   double xmin, ymin, xmax, ymax;
   std::vector<POLY> contours; /*input*/

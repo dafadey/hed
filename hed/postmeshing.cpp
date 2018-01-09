@@ -9,7 +9,7 @@
 #include <vectors.h>
 #include <svg.h>
 #include <fstream>
-#include <postmeshing.h>
+#include "postmeshing.h"
 
 vec_type get_circumcircle_center(const ITRIANGLE* t)
 {
@@ -51,12 +51,12 @@ std::array<double, 2> get_central_heights(const IEDGE* e)
   return hs;
 }
 
-void calculate_weights(weights* w, const mesher* m)
+void calculate_weights(weights* w, const mesh* m)
 {
   size_t id(0);
   for(auto t : m->triangles)
   {
-    w->tris.push_back(std::array<double, TRI_WEIGHTS>{{t->area()}});
+    w->tris.push_back(std::array<hed_data_type, TRI_WEIGHTS>{{1.0 / t->area()}});
     t->id = id;
     id++;
   }
@@ -66,7 +66,7 @@ void calculate_weights(weights* w, const mesher* m)
     const auto hs = get_central_heights(e);
     const vec_type p1(e->p1);
     const vec_type p2(e->p2);
-    w->edgs.push_back(std::array<double, EDGE_WEIGHTS>{{(p2 - p1).norm(), hs[0] + hs[1]}});
+    w->edgs.push_back(std::array<hed_data_type, EDGE_WEIGHTS>{{(p2 - p1).norm(), 1.0 / (hs[0] + hs[1])}});
     e->id = id;
     id++;
   }
@@ -79,7 +79,7 @@ void calculate_weights(weights* w, const mesher* m)
       size_t eid = e->id;
       s += 0.25 * w->edgs[eid][0] * w->edgs[eid][1];
     }
-    w->nds.push_back(std::array<double, NODE_WEIGHTS>{{s}});
+    w->nds.push_back(std::array<hed_data_type, NODE_WEIGHTS>{{1.0 / s}});
     p->id = id;
     id++;
   }

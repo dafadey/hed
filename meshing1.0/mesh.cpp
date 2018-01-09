@@ -16,7 +16,7 @@ void search_grid<XY>::get_bounds(const XY& p, bounds& b)
   b.pmax.x = p.x; b.pmax.y = p.y;
 }
 
-const XY* mesher::sg_get_point(const XY& p) const
+const XY* mesh::sg_get_point(const XY& p) const
 {
   for(auto p_ptr : points_sg.get_cell(p.x, p.y))
   {
@@ -31,7 +31,7 @@ double ranged_rand(double v_min, double v_max)
   return ((double) rand() / (double) RAND_MAX * (v_max - v_min)) + v_min;
 }
 
-void mesher::seed_geometry(double d)
+void mesh::seed_geometry(double d)
 {
   const bool debug(true);
   xmin = std::numeric_limits<double>::max();
@@ -109,7 +109,7 @@ void mesher::seed_geometry(double d)
   }
 }
 
-void mesher::seed_volume(double d)
+void mesh::seed_volume(double d)
 {
   //push some points
   const double volume = (xmax - xmin) * (ymax - ymin);
@@ -119,7 +119,7 @@ void mesher::seed_volume(double d)
     nodes.push_back(newXY(ranged_rand(xmin,xmax), ranged_rand(ymin,ymax)));
 }
 
-void mesher::triangulate()
+void mesh::triangulate()
 {
   const bool debug(false);
   std::vector<XY*> pts;
@@ -137,7 +137,7 @@ void mesher::triangulate()
   
 }
 
-void mesher::clear_mesh()
+void mesh::clear_mesh()
 {
   for(auto n : nodes)
   {
@@ -198,7 +198,7 @@ double force(double r2, double r2_0)
   return f;
 }
 
-void mesher::improve_seeding(double d, double dt, bool debug)
+void mesh::improve_seeding(double d, double dt, bool debug)
 {
   //double dt = 0.1;
   //std::cout << "has " << n_fixed_nodes << " fixed nodes\n";
@@ -260,7 +260,7 @@ void mesher::improve_seeding(double d, double dt, bool debug)
   of.close();
 }
 
-std::array<double, 8> mesher::check_quality()
+std::array<double, 8> mesh::check_quality()
 {
   double savg(.0), ds(.0), smin(std::numeric_limits<double>::max()), smax(-std::numeric_limits<double>::max());
   double lavg(.0), dl(.0), lmin(std::numeric_limits<double>::max()), lmax(-std::numeric_limits<double>::max());
@@ -300,7 +300,7 @@ std::array<double, 8> mesher::check_quality()
   return std::array<double, 8>{{savg, ds, smin, smax, lavg, dl, lmin, lmax}};
 }
 
-void mesher::print_quality()
+void mesh::print_quality()
 {
   auto q = check_quality();
   std::cout << "quality: savg=" << q[0] << ", ds=" << q[1] << ", smin=" << q[2] << ", smax=" << q[3] << "\n"
@@ -308,7 +308,7 @@ void mesher::print_quality()
 }
 
 
-void mesher::build_edges()
+void mesh::build_edges()
 {
   typedef std::array<XY*, 2> edge_graph_type;
   std::map<edge_graph_type, IEDGE*> emap;
@@ -318,8 +318,9 @@ void mesher::build_edges()
     const edge_graph_type tedges[3]{MAKE_ORDERED_PAIR(t->p1, t->p2),
                                         MAKE_ORDERED_PAIR(t->p2, t->p3),
                                         MAKE_ORDERED_PAIR(t->p3, t->p1)};
-    for(const auto& e : tedges)
+    for(size_t eid(0); eid != 3; eid++)
     {
+			const auto& e = tedges[eid];
       auto it = emap.find(e);
       if(it != emap.end())
         it->second->t2 = t;
@@ -327,8 +328,10 @@ void mesher::build_edges()
       {
         IEDGE* newe = newIEDGE(e[0], e[1]);
         newe->t1 = t;
+        t->edges[eid] = newe;
         emap[e] = newe;
         edges.push_back(newe);
+        
       }
       
     }

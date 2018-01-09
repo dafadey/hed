@@ -18,7 +18,7 @@ int main()
     ci++;
   }
   of.close();
-  mesher m;
+  mesh m;
   
   for(const auto& c : contours)
   {
