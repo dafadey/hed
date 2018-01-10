@@ -308,6 +308,19 @@ void mesh::print_quality()
 }
 
 
+void mesh::orient()
+{
+	if(edges_valid)
+		std::cerr << "call mesh::orient() before building edges. skipping orient\n";
+		return;
+	for(auto t : triangles)
+	{
+		if(t->area() < 0)
+			std::swap(t->p1, t->p3);
+	}
+	oriented = true;
+}
+
 void mesh::build_edges()
 {
   typedef std::array<XY*, 2> edge_graph_type;
@@ -315,13 +328,14 @@ void mesh::build_edges()
   for(auto t : triangles)
   {
     #define MAKE_ORDERED_PAIR(X, Y) (edge_graph_type{{std::min(X, Y), std::max(X, Y)}})
-    const edge_graph_type tedges[3]{MAKE_ORDERED_PAIR(t->p1, t->p2),
-                                        MAKE_ORDERED_PAIR(t->p2, t->p3),
-                                        MAKE_ORDERED_PAIR(t->p3, t->p1)};
+    const edge_graph_type tedges[3]{edge_graph_type{{t->p1, t->p2}},
+                                    edge_graph_type{{t->p2, t->p3}},
+                                    edge_graph_type{{t->p3, t->p1}}};
     for(size_t eid(0); eid != 3; eid++)
     {
 			const auto& e = tedges[eid];
-      auto it = emap.find(e);
+			const auto& oe = MAKE_ORDERED_PAIR(e[0], e[1]);
+      auto it = emap.find(oe);
       if(it != emap.end())
         it->second->t2 = t;
       else
@@ -329,12 +343,12 @@ void mesh::build_edges()
         IEDGE* newe = newIEDGE(e[0], e[1]);
         newe->t1 = t;
         t->edges[eid] = newe;
-        emap[e] = newe;
+        emap[oe] = newe;
         edges.push_back(newe);
-        
       }
       
     }
     #undef MAKE_ORDERED_PAIR
   }
+  edges_valid = true;
 }

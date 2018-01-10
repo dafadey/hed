@@ -22,7 +22,7 @@ void hed_data::calc_h()
 		for(size_t eid_local(0); eid_local != 3; eid_local++)
 		{
 			const size_t eid = m->triangles[i]->edges[eid]->id;
-			db += e[eid] * w->edgs[eid][0];
+			db += (m->edges[eid]->t1 == m->triangles[tid] ? hed_data_type(1.0) : hed_data_type(-1.0)) * e[eid] * w->edgs[eid][0]; // keep same orientation of edge as triangle have
 		}
 		h[i] -= db * dt * w->tris[i][0];
 	}

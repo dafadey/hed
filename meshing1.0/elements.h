@@ -33,12 +33,12 @@ XY* newXY(double _x, double _y);
 struct ITRIANGLE
 {
   ITRIANGLE() {}
-  ITRIANGLE(const XY* _p1, const XY* _p2, const XY* _p3) : p1((XY*) _p1), p2((XY*) _p2), p3((XY*) _p3), nbrs(), edges() {}
+  ITRIANGLE(const XY* _p1, const XY* _p2, const XY* _p3) : p1((XY*) _p1), p2((XY*) _p2), p3((XY*) _p3), /*nbrs(),*/ edges() {}
   XY* p1;
   XY* p2;
   XY* p3;
   size_t id;
-  std::array<ITRIANGLE*,3> nbrs;
+  //std::array<ITRIANGLE*,3> nbrs;
   std::array<IEDGE*,3> edges;
   XY* point(int /*point index 0, 1 or 2*/); //accesor
   XY centroid();
