@@ -1,0 +1,3 @@
+#!/bin/bash
+tools=/home/dan/tools
+g++ -o test_sim -O3 test_sim.cpp -I${tools}/include -I${tools}/include/mesh1 -L${tools}/lib -lmesh1 -lsvg1 -lheds -Wl,-rpath=${tools}/lib

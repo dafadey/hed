@@ -8,14 +8,14 @@ struct mesh
 {
 	mesh() : xmin(std::numeric_limits<double>::max()), ymin(std::numeric_limits<double>::max()),
 					 xmax(-std::numeric_limits<double>::max()), ymax(-std::numeric_limits<double>::max()),
-					 n_fixed_nodes(0), contours(), fixed_edges(), points_sg(), nodes(), edges(), triangles(),
-					 edges_valid(false), oriented(false) {}
+					 n_fixed_nodes(0), contours(), fixed_edges(), points_sg(), contour_links(), nodes(),
+           edges(), triangles(), edges_valid(false), oriented(false) {}
   double xmin, ymin, xmax, ymax;
   size_t n_fixed_nodes;
   std::vector<POLY> contours; /*input*/
   std::vector<std::array<XY*, 2>> fixed_edges; /*intermediate structure that holds seeded geometry*/
   search_grid<XY> points_sg; // an internal optimizing structure to hold points
-  
+  std::vector<int> contour_links; // links point to contour
   std::vector<XY*> nodes; /*output*/
   std::vector<IEDGE*> edges; /*output*/
   std::vector<ITRIANGLE*> triangles; /*output*/

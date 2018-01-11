@@ -38,18 +38,23 @@ void mesh::seed_geometry(double d)
   xmax = - xmin;
   ymin = xmin;
   ymax = - xmin;
-  for(const auto& c : contours)
+  for(size_t c_id(0); c_id != contours.size(); c_id++)
   {
+    const auto& c = contours[c_id];
     for(auto p : c.points)
     {
       nodes.push_back(p);
+      contour_links.push_back(c_id);
       xmin = std::min(xmin, p->x);
       xmax = std::max(xmax, p->x);
       ymin = std::min(ymin, p->y);
       ymax = std::max(ymax, p->y);
     }
     if(*(c.points[0]) == *(c.points[c.points.size() - 1]))
+    {
       nodes.pop_back();
+      contour_links.pop_back();
+    }
   }
   points_sg.OPC=-1;
   points_sg.nx=100;
@@ -66,8 +71,9 @@ void mesh::seed_geometry(double d)
     of.close();
   }
   
-  for(const auto& c : contours)
+  for(size_t c_id(0); c_id != contours.size(); c_id++)
   {
+    const auto& c = contours[c_id];
     bool closed(false);
     if(*(c.points[0]) == *(c.points[c.points.size() - 1]))
       closed = true;
@@ -94,6 +100,7 @@ void mesh::seed_geometry(double d)
         subdivnodes[i] = newXY(x, y);
         points_sg.add_one(subdivnodes[i]);
         nodes.push_back((XY*) subdivnodes[i]);
+        contour_links.push_back(c_id);
       }
       for(size_t i(0); i != nsub; i++)
         fixed_edges.push_back(std::array<XY*, 2> {{(XY*) subdivnodes[i], (XY*) subdivnodes[i + 1]}});
@@ -315,7 +322,7 @@ void mesh::orient()
 		return;
 	for(auto t : triangles)
 	{
-		if(t->area() < 0)
+		if(t->area() < .0)
 			std::swap(t->p1, t->p3);
 	}
 	oriented = true;
