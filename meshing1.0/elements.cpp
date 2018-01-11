@@ -85,7 +85,7 @@ bool XY::operator==(const XY& p1) const
 
 std::ostream& operator<<(std::ostream& s, const XY& p)
 {
-  return s << "p " << p.x << " " << p.y << "\n";
+  return s << "\np " << p.x << " " << p.y;
 }
 
 //ITRIANGLE::ITRIANGLE::ITRIANGLE::ITRIANGLE::ITRIANGLE::
@@ -122,9 +122,9 @@ double ITRIANGLE::area()
 
 std::ostream& operator<<(std::ostream& s, const ITRIANGLE& t)
 {
-  return s << "t " << t.p1->x << " " << t.p1->y
-            << " " << t.p2->x << " " << t.p2->y
-            << " " << t.p3->x << " " << t.p3->y << "\n";
+  return s << "\nt " << t.p1->x << " " << t.p1->y
+              << " " << t.p2->x << " " << t.p2->y
+              << " " << t.p3->x << " " << t.p3->y;
 }
 
 
@@ -137,6 +137,6 @@ XY IEDGE::centroid()
 
 std::ostream& operator<<(std::ostream& s, const IEDGE& e)
 {
-  return s << "e " << e.p1->x << " " << e.p1->y
-            << " " << e.p2->x << " " << e.p2->y << "\n";
+  return s << "\ne " << e.p1->x << " " << e.p1->y
+              << " " << e.p2->x << " " << e.p2->y;
 }

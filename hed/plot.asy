@@ -1,39 +1,75 @@
-file f=input("test.dat").word();
+file f=input("mesh.debug").line();
 string[] data=f;
 write("size = ",data.length);
 
 pair[] pts;
+real[][] ptsfields;
 pair[] edgs;
+real[][] edgsfields;
 pair[] tris;
+real[][] trisfields;
 for(int i=0;i!=data.length;++i)
 {
-  //string line=data[i];
-  //string[] items=split(line," ");
-  if(data[i] == "p")
+  string line=data[i];
+  string[] items = split(line," ");
+  if(items[0] == "p")
   {
-    pts.push(((real)data[i+1],(real)data[i+2]));
-    i+=2;
+    pts.push(((real) items[1], (real) items[2]));
+		real[] fields;
+		for(int j=3 ; j < items.length; ++j)
+			fields.push((real) items[j]);
+		if(fields.length != 0)
+			ptsfields.push(fields);
+  } 
+  if(items[0] == "e")
+  {
+    edgs.push(((real) items[1], (real) items[2]));
+    edgs.push(((real) items[3], (real) items[4]));
+		real[] fields;
+		for(int j=5 ; j < items.length; ++j)
+			fields.push((real) items[j]);
+		if(fields.length != 0)
+			edgsfields.push(fields);
   }
-  if(data[i] == "e")
+  if(items[0] == "t")
   {
-    edgs.push(((real)data[i+1],(real)data[i+2]));
-    edgs.push(((real)data[i+3],(real)data[i+4]));
-    i+=4;
-  }
-  if(data[i] == "t")
-  {
-    tris.push(((real)data[i+1],(real)data[i+2]));
-    tris.push(((real)data[i+3],(real)data[i+4]));
-    tris.push(((real)data[i+5],(real)data[i+6]));
-    i+=6;
+    tris.push(((real) items[1], (real) items[2]));
+    tris.push(((real) items[3], (real) items[4]));
+    tris.push(((real) items[5], (real) items[6]));
+		real[] fields;
+		for(int j=7 ; j < items.length; ++j)
+			fields.push((real) items[j]);
+		if(fields.length != 0)
+			trisfields.push(fields);
   }
 }
 
 write("found " + string(pts.length) + " points");
-write("found " + string(edgs.length) + " edges");
-write("found " + string(tris.length) + " triangles");
+write(" + " + string(ptsfields.length) + " fields");
+write("found " + string(edgs.length/2) + " edges");
+write(" + " + string(edgsfields.length) + " fields");
+write("found " + string(tris.length/3) + " triangles");
+write(" + " + string(trisfields.length) + " fields");
 
 unitsize(7cm);
+
+pen color(real x)
+{
+	real s = sqrt(abs(x));
+	return (x > 0 ? red * s : red * 0) + green * x^2 + (x < 0 ? blue * s : blue * 0);
+}
+
+pen[] colorbar(int prec = 256)
+{
+	pen[] res = new pen[prec];
+	real k = 1.0 / (prec - 1) * 2.0;
+	for(int i = 0; i != prec; ++i)
+	{
+		real x = i * k - 1.0;
+		res[i] = color(x);
+	}
+	return res;
+}
   
 for(int i=0;i!=floor(tris.length/3);++i)
 {
@@ -43,8 +79,12 @@ for(int i=0;i!=floor(tris.length/3);++i)
   //--cycle, blue);
 }
 
-for(int i=0;i!=floor(edgs.length/2);++i)
-  draw((edgs[i*2].x,edgs[i*2].y)--(edgs[i*2+1].x,edgs[i*2+1].y), .5 * green + .8 * red);
+int efn=0;
 
+for(int i=0;i!=floor(edgs.length/2);++i)
+{
+	//write(edgsfields[i][efn]);
+  draw((edgs[i*2].x,edgs[i*2].y)--(edgs[i*2+1].x,edgs[i*2+1].y), edgsfields.length != 0 ? color(edgsfields[i][efn]) : black);
+}
 for(int i=0;i!=pts.length;++i)
-  dot((pts[i].x,pts[i].y),0.5*green);
+  dot((pts[i].x,pts[i].y), ptsfields.length != 0 ? color(ptsfields[i][efn]) : black);

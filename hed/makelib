@@ -1,6 +1,6 @@
 #!/bin/bash
 toolspath=/home/dan/tools
-g++ -g -O0 -fPIC -shared -I${toolspath}/include/mesh1 postmeshing.cpp solver.cpp -L${toolspath}/lib -lmesh1 -lsvg1 -Wl,-soname,heds.so -o heds.so
+g++ -g -O0 -fPIC -shared -I${toolspath}/include/mesh1 postmeshing.cpp solver.cpp -L${toolspath}/lib -lmesh1 -lsvg1 -Wl,-soname,libheds.so -o heds.so
 res1=$?
 function mklink {
 	if [ -L `pwd`/../lib/lib$1.so ]; then

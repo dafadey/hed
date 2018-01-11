@@ -45,7 +45,9 @@ std::array<double, 2> get_central_heights(const IEDGE* e)
   vec_type p1(e->p2);
   vec_type c = .5 * (p0 + p1);
   vec_type c1 = get_circumcircle_center(e->t1) - c;
-  vec_type c2 = get_circumcircle_center(e->t2) - c;
+  vec_type c2(.0, .0);
+  if(e->t2)
+		c2 = get_circumcircle_center(e->t2) - c;
   hs[0] = c1.norm();
   hs[1] = c2.norm();
   return hs;

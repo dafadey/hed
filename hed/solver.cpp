@@ -34,9 +34,11 @@ void hed_data::extract_contour_edges()
 {
   std::map<IEDGE*, std::array<int, 2>> emap;
   int c_id_max(0);
+  //std::cout << "countour links size is " << m->contour_links.size() << "\n";
   for(size_t n_id(0); n_id != m->contour_links.size(); n_id++)
   {
-    int c_id = m->contour_links[c_id];
+    int c_id = m->contour_links[n_id];
+    //std::cout << "doing contour # " << c_id << "\n";
     c_id_max = std::max(c_id_max, c_id);
     for(auto e : m->nodes[n_id]->edges)
     {
@@ -47,7 +49,17 @@ void hed_data::extract_contour_edges()
         it->second[0]++;
     }
   }
-  contour_edges.resize(c_id_max);
+  /*
   for(const auto& it : emap)
-    contour_edges[it.second[1]].push_back(it.first->id);
+    std::cout << it.first->p1->x << ", " << it.first->p1->y << " - "
+							<< it.first->p2->x << ", " << it.first->p2->y << " : "
+							<< it.second[0] << " (" << it.second[1] << ")\n";
+	*/
+
+  contour_edges.resize(c_id_max + 1);
+  for(const auto& it : emap)
+  {
+		if(it.second[0] == 1)
+			contour_edges[it.second[1]].push_back(it.first->id);
+	}
 }
