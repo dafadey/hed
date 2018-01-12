@@ -55,24 +55,17 @@ std::array<double, 2> get_central_heights(const IEDGE* e)
 
 void calculate_weights(weights* w, const mesh* m)
 {
-  size_t id(0);
   for(auto t : m->triangles)
-  {
     w->tris.push_back(std::array<hed_data_type, TRI_WEIGHTS>{{1.0 / t->area()}});
-    t->id = id;
-    id++;
-  }
-  id = 0;
+  
   for(auto e : m->edges)
   {
     const auto hs = get_central_heights(e);
     const vec_type p1(e->p1);
     const vec_type p2(e->p2);
     w->edgs.push_back(std::array<hed_data_type, EDGE_WEIGHTS>{{(p2 - p1).norm(), 1.0 / (hs[0] + hs[1])}});
-    e->id = id;
-    id++;
   }
-  id = 0;
+
   for(auto p : m->nodes)
   {
     double s(.0);
@@ -82,7 +75,5 @@ void calculate_weights(weights* w, const mesh* m)
       s += 0.25 * w->edgs[eid][0] * w->edgs[eid][1];
     }
     w->nds.push_back(std::array<hed_data_type, NODE_WEIGHTS>{{1.0 / s}});
-    p->id = id;
-    id++;
   }
 }

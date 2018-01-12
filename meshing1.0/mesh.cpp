@@ -44,17 +44,13 @@ void mesh::seed_geometry(double d)
     for(auto p : c.points)
     {
       nodes.push_back(p);
-      contour_links.push_back(c_id);
       xmin = std::min(xmin, p->x);
       xmax = std::max(xmax, p->x);
       ymin = std::min(ymin, p->y);
       ymax = std::max(ymax, p->y);
     }
     if(*(c.points[0]) == *(c.points[c.points.size() - 1]))
-    {
       nodes.pop_back();
-      contour_links.pop_back();
-    }
   }
   points_sg.OPC=-1;
   points_sg.nx=100;
@@ -100,18 +96,24 @@ void mesh::seed_geometry(double d)
         subdivnodes[i] = newXY(x, y);
         points_sg.add_one(subdivnodes[i]);
         nodes.push_back((XY*) subdivnodes[i]);
-        contour_links.push_back(c_id);
       }
       for(size_t i(0); i != nsub; i++)
+      {
         fixed_edges.push_back(std::array<XY*, 2> {{(XY*) subdivnodes[i], (XY*) subdivnodes[i + 1]}});
+				fixed_edges_mask.push_back(c_id);
+			}
     }
   }
   n_fixed_nodes = nodes.size();
   if(debug)
   {
     std::ofstream of("sg.debug", std::ios_base::app);
-    for(const auto& e : fixed_edges)
-      of << IEDGE(e[0], e[1]);
+    double k = 1.0 / (double) contours.size();
+    for(size_t e_id(0); e_id != fixed_edges.size(); e_id++)
+    {
+			const auto& e = fixed_edges[e_id];
+      of << IEDGE(e[0], e[1]) << " " << (double) (fixed_edges_mask[e_id] + 1) * k;
+    }
     of.close();
   }
 }
@@ -358,4 +360,14 @@ void mesh::build_edges()
     #undef MAKE_ORDERED_PAIR
   }
   edges_valid = true;
+}
+
+void mesh::fill_ids()
+{
+	for(size_t p_id(0); p_id != nodes.size(); p_id++)
+		nodes[p_id]->id = p_id;
+	for(size_t e_id(0); e_id != edges.size(); e_id++)
+		edges[e_id]->id = e_id;
+  for(size_t t_id(0); t_id != triangles.size(); t_id++)
+		triangles[t_id]->id = t_id;
 }

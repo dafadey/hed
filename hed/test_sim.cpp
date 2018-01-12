@@ -41,6 +41,8 @@ int main()
 	std::cout << "orient is done\n";
 	m.build_edges();
 	std::cout << "edges are built\n";
+	m.fill_ids();
+	std::cout << "ids are added to elements\n";
 	
 	weights wgts;
 	calculate_weights(&wgts, &m);
@@ -49,6 +51,12 @@ int main()
 	hed_data hedsol;
 	hedsol.m = &m;
 	hedsol.w = &wgts;
+  hedsol.e.resize(m.edges.size());
+  for(auto it : hedsol.e)
+		it = .0;
+  hedsol.h.resize(m.triangles.size());
+  for(auto it : hedsol.h)
+		it = .0;
   
   hedsol.extract_contour_edges();
 	std::cout << "contour edges extracted\n";
@@ -71,6 +79,32 @@ int main()
   for(size_t e_id=0; e_id != m.edges.size(); e_id++)
     of << *(m.edges[e_id]) << " " << edg_mask[e_id];
   of.close();
+
+	hed_data_type dt = 0.1;
+	hed_data_type t = .0;
+	size_t target_c_id = hedsol.contour_edges.size() - 1;
+	int step = 0;
+
+	while(t < hed_data_type(10.0))
+	{
+		for(size_t j=0; j!=hedsol.contour_edges[target_c_id].size(); j++)
+		{
+			size_t e_id = hedsol.contour_edges[target_c_id][j];
+			hed_data_type dir = m.edges[e_id]->p2->x > m.edges[e_id]->p1->x ? hed_data_type(1.0) : hed_data_type(-1.0); 
+			hedsol.e[e_id] += dir * sin(t) * dt;
+		}
+		//hedsol.calc_e();
+		hedsol.calc_h();
+		of.open(("fields/fields"+std::to_string(step)+".debug").c_str());
+		for(size_t e_id=0; e_id != m.edges.size(); e_id++)
+			of << *(m.edges[e_id]) << " " << hedsol.e[e_id];
+		for(size_t t_id=0; t_id != m.triangles.size(); t_id++)
+			of << *(m.triangles[t_id]) << " " << hedsol.h[t_id];
+		of.close();
+		step++;
+		t += dt;
+	}
+	
 
   return 0;
 }

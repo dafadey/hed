@@ -1,5 +1,5 @@
 #include <iostream>
-#include <map>
+#include <set>
 #include "solver.h"
 
 void hed_data::calc_e()
@@ -22,9 +22,24 @@ void hed_data::calc_h()
 		hed_data_type db(hed_data_type(.0));
 		for(size_t eid_local(0); eid_local != 3; eid_local++)
 		{
-			const size_t eid = m->triangles[i]->edges[eid]->id;
+			if(tid >= m->triangles.size())
+				std::cerr << "bad triangle id " << tid << " (max is " << m->triangles.size() << ")\n";
+			if(!m->triangles[tid]->edges[eid_local])
+				std::cerr << "no edge " << eid_local << " for triangle # " << tid << "\n";
+			const size_t eid = m->triangles[tid]->edges[eid_local]->id;
+			std::cout << "eid=" << eid << "\n";
+			auto ed = m->triangles[tid]->edges[eid_local];
+			std::cout << ed << "\n";
+      std::cout << *ed << " id=" << eid << "\n";
+      if(eid >= m->edges.size())
+				std::cerr << "bad edge id " << eid << " (max is " << m->edges.size() << ")\n";
+			if(!m->edges[eid])
+				std::cerr << "empty edge " << eid << "\n";
+      std::cout << "tid=" << tid << ", eid=" << eid << "\n";
+			std::cout << "w->edges.size()=" << w->edgs.size() << "\n";
 			db += (m->edges[eid]->t1 == m->triangles[tid] ? hed_data_type(1.0) : hed_data_type(-1.0))
              * e[eid] * w->edgs[eid][0]; // keep same orientation of edge as triangle have
+			std::cout << "-\n";
 		}
 		h[i] += db * dt * w->tris[i][0];
 	}
@@ -32,34 +47,42 @@ void hed_data::calc_h()
 
 void hed_data::extract_contour_edges()
 {
-  std::map<IEDGE*, std::array<int, 2>> emap;
+  std::vector<IEDGE*> edg_map;
   int c_id_max(0);
   //std::cout << "countour links size is " << m->contour_links.size() << "\n";
-  for(size_t n_id(0); n_id != m->contour_links.size(); n_id++)
+  for(size_t e_id(0); e_id != m->fixed_edges.size(); e_id++)
   {
-    int c_id = m->contour_links[n_id];
+    int c_id = m->fixed_edges_mask[e_id];
     //std::cout << "doing contour # " << c_id << "\n";
     c_id_max = std::max(c_id_max, c_id);
-    for(auto e : m->nodes[n_id]->edges)
+    const auto& e = m->fixed_edges[e_id];
+    std::set<IEDGE*> connected_edges;
+    IEDGE* edg(nullptr);
+    for(auto n : e)
     {
-      auto it = emap.find(e);
-      if(it == emap.end())
-        emap[e] = std::array<int, 2>{{0, c_id}};
-      else
-        it->second[0]++;
-    }
+			for(auto ce : n->edges)
+			{
+				auto res = connected_edges.insert(ce);
+				if(!res.second)
+				{
+					edg = ce;
+					break;
+				}
+			}
+		}
+		if(edg)
+			edg_map.push_back(edg);
   }
-  /*
-  for(const auto& it : emap)
-    std::cout << it.first->p1->x << ", " << it.first->p1->y << " - "
-							<< it.first->p2->x << ", " << it.first->p2->y << " : "
-							<< it.second[0] << " (" << it.second[1] << ")\n";
-	*/
+  if(edg_map.size() != m->fixed_edges.size())
+	{
+		std::cerr << "failed to collect fixed edges\n";
+		return;
+	}
 
   contour_edges.resize(c_id_max + 1);
-  for(const auto& it : emap)
+  for(size_t e_id(0); e_id != edg_map.size(); e_id++)
   {
-		if(it.second[0] == 1)
-			contour_edges[it.second[1]].push_back(it.first->id);
+		const auto& e = edg_map[e_id];
+		contour_edges[m->fixed_edges_mask[e_id]].push_back(e->id);
 	}
 }

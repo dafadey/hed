@@ -1,4 +1,4 @@
-file f=input("mesh.debug").line();
+//file f=input("sg.debug").line();
 string[] data=f;
 write("size = ",data.length);
 
@@ -8,6 +8,7 @@ pair[] edgs;
 real[][] edgsfields;
 pair[] tris;
 real[][] trisfields;
+pair[][] polygons;
 for(int i=0;i!=data.length;++i)
 {
   string line=data[i];
@@ -42,6 +43,19 @@ for(int i=0;i!=data.length;++i)
 		if(fields.length != 0)
 			trisfields.push(fields);
   }
+	if(items[0] == "box")
+	{
+		real x0 = (real) items[1];
+		real y0 = (real) items[2];
+		real x1 = (real) items[3];
+		real y1 = (real) items[4];
+		pair[] p;
+		p.push((x0, y0));
+		p.push((x0, y1));
+		p.push((x1, y1));
+		p.push((x1, y0));
+		polygons.push(p);
+	}
 }
 
 write("found " + string(pts.length) + " points");
@@ -86,5 +100,15 @@ for(int i=0;i!=floor(edgs.length/2);++i)
 	//write(edgsfields[i][efn]);
   draw((edgs[i*2].x,edgs[i*2].y)--(edgs[i*2+1].x,edgs[i*2+1].y), edgsfields.length != 0 ? color(edgsfields[i][efn]) : black);
 }
-for(int i=0;i!=pts.length;++i)
+
+for(int i=0; i != pts.length; ++i)
   dot((pts[i].x,pts[i].y), ptsfields.length != 0 ? color(ptsfields[i][efn]) : black);
+
+for(int i=0; i != polygons.length; ++i)
+{
+	guide g;
+	for(int j=0; j != polygons[i].length; ++j)
+		g = g -- polygons[i][j];
+	g = g -- cycle;
+	draw(g);
+}

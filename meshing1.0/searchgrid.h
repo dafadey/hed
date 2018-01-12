@@ -35,11 +35,11 @@ std::ostream& operator<<(std::ostream& s, const search_grid<T>& sg)
   {
     for(int i=0;i<sg.nx;i++)
     {
-      s << "r " << i+j*sg.nx << "\n";
-      s << "box " << sg.b.pmin.x + double(i) / sg.dx_1 << " "
+      s << "\nr " << i+j*sg.nx;
+      s << "\nbox " << sg.b.pmin.x + double(i) / sg.dx_1 << " "
                  << sg.b.pmin.y + double(j) / sg.dy_1 << " "
                  << sg.b.pmin.x + double(i + 1) / sg.dx_1 << " "
-                 << sg.b.pmin.y + double(j + 1) / sg.dy_1 << "\n";
+                 << sg.b.pmin.y + double(j + 1) / sg.dy_1;
       for(auto it : sg.data[i+j*sg.nx])
         s << *it;
     }
