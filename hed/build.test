@@ -1,2 +1,0 @@
-#!/bin/bash
-g++ -O3 test.cpp postmeshing.cpp -I./ -I../meshing1.0/ -L../lib -lmesh1 -lsvg1 -Wl,-rpath=../lib/

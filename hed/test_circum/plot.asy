@@ -1,4 +1,4 @@
-//file f=input("sg.debug").line();
+file f=input("test.dat").line();
 string[] data=f;
 write("size = ",data.length);
 

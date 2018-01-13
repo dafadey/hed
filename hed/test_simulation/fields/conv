@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+  echo number of input threads not specified using 4 
+  threads=$((4))
+else
+  threads=$1
+fi
+
+files=($(ls | grep fields))
+echo array size is ${#files[*]}
+
+conv() {
+  local i=$1
+  while [ $i -lt ${#files[*]} ]; do
+    local fn=${files[$i]}
+    echo $1 : ${i}/${#files[*]} : ${fn}
+    #sleep 1
+    ./plot ${fn} "-f png" 1>/dev/null 2>/dev/null
+    i=$(($i +  $threads))
+ done  
+}
+
+for i in `seq 0 $(($threads - 1))`; do
+  conv $i &
+done

@@ -4,17 +4,25 @@
 
 void hed_data::calc_e()
 {
-//  double avg_w(.0);
   for(int i(0); i != e.size(); i++)
   {
     const ssize_t eid = i; // = m.edges[i].id;
     const ssize_t ir = m->edges[eid]->t1 ? m->edges[eid]->t1->id : -1;
     const ssize_t il = m->edges[eid]->t2 ? m->edges[eid]->t2->id : -1;
-//    avg_w += w->edgs[i][1];
-    e[i] -= ((ir == -1 ? hed_data_type(.0) : h[ir]) -
-             (il == -1 ? hed_data_type(.0) : h[il])) * w->edgs[i][1] * dt;
+    e[i] -= (j[i] + ((ir == -1 ? hed_data_type(.0) : h[ir]) -
+                     (il == -1 ? hed_data_type(.0) : h[il])) * w->edgs[i][1]) * dt;
   }
-//  std::cout << "avg w_e=" << avg_w / (double) e.size() << "\n";
+}
+
+void hed_data::calc_j()
+{
+  for(int i(0); i != j.size(); i++)
+  {
+    const ssize_t eid = i; // = m.edges[i].id;
+    const ssize_t n0 = m->edges[eid]->p1->id;
+    const ssize_t n1 = m->edges[eid]->p2->id;
+    j[i] += hed_data_type(.5) * (n[n0] + n[n1]) * e[i] * dt;
+  }
 }
 
 void hed_data::calc_h()

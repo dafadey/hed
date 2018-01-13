@@ -19,7 +19,6 @@ struct hed_data
   
   void calc_e();
   void calc_h();
-  //void calc_j();
-  //void calc_h();
+  void calc_j();
 };
 
