@@ -49,7 +49,7 @@ double vec_type::norm() const
 
 vec_type operator*(double a, const vec_type& v)
 {
-  vec_type(a * v[0], a * v[1]);
+  return vec_type(a * v[0], a * v[1]);
 }
 
 double vp(const vec_type& p0, const vec_type& p1)

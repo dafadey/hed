@@ -43,7 +43,7 @@ std::array<double, 2> get_central_heights(const IEDGE* e)
   std::array<double, 2> hs;
   vec_type p0(e->p1);
   vec_type p1(e->p2);
-  vec_type c = .5 * (p0 + p1);
+  const vec_type c = .5 * (p0 + p1);
   vec_type c1 = get_circumcircle_center(e->t1) - c;
   vec_type c2(.0, .0);
   if(e->t2)

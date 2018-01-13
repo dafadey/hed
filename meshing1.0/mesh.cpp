@@ -319,15 +319,15 @@ void mesh::print_quality()
 
 void mesh::orient()
 {
-	if(edges_valid)
-		std::cerr << "call mesh::orient() before building edges. skipping orient\n";
-		return;
-	for(auto t : triangles)
-	{
-		if(t->area() < .0)
-			std::swap(t->p1, t->p3);
-	}
-	oriented = true;
+  if(edges_valid)
+    std::cerr << "call mesh::orient() before building edges. skipping orient\n";
+    return;
+  for(auto t : triangles)
+  {
+    if(t->area() < .0)
+      std::swap(t->p1, t->p3);
+  }
+  oriented = true;
 }
 
 void mesh::build_edges()
@@ -342,11 +342,14 @@ void mesh::build_edges()
                                     edge_graph_type{{t->p3, t->p1}}};
     for(size_t eid(0); eid != 3; eid++)
     {
-			const auto& e = tedges[eid];
-			const auto& oe = MAKE_ORDERED_PAIR(e[0], e[1]);
+      const auto& e = tedges[eid];
+      const auto& oe = MAKE_ORDERED_PAIR(e[0], e[1]);
       auto it = emap.find(oe);
       if(it != emap.end())
+      {
         it->second->t2 = t;
+        t->edges[eid] = it->second;
+      }
       else
       {
         IEDGE* newe = newIEDGE(e[0], e[1]);
@@ -364,10 +367,10 @@ void mesh::build_edges()
 
 void mesh::fill_ids()
 {
-	for(size_t p_id(0); p_id != nodes.size(); p_id++)
-		nodes[p_id]->id = p_id;
-	for(size_t e_id(0); e_id != edges.size(); e_id++)
-		edges[e_id]->id = e_id;
+  for(size_t p_id(0); p_id != nodes.size(); p_id++)
+    nodes[p_id]->id = p_id;
+  for(size_t e_id(0); e_id != edges.size(); e_id++)
+    edges[e_id]->id = e_id;
   for(size_t t_id(0); t_id != triangles.size(); t_id++)
-		triangles[t_id]->id = t_id;
+    triangles[t_id]->id = t_id;
 }

@@ -28,7 +28,7 @@ int main()
 
   of.open("mesh.debug");
   of.close();
-  for(int i=0; i!=3; i++)
+  for(int i=0; i!=7; i++)
   {
     for(int j=0; j!=7; j++)
       m.improve_seeding(seed,seed*0.1);
@@ -80,29 +80,32 @@ int main()
     of << *(m.edges[e_id]) << " " << edg_mask[e_id];
   of.close();
 
-	hed_data_type dt = 0.1;
+	hedsol.dt = 0.1;
 	hed_data_type t = .0;
 	size_t target_c_id = hedsol.contour_edges.size() - 1;
 	int step = 0;
 
-	while(t < hed_data_type(10.0))
+	while(t < hed_data_type(100.0))
 	{
 		for(size_t j=0; j!=hedsol.contour_edges[target_c_id].size(); j++)
 		{
 			size_t e_id = hedsol.contour_edges[target_c_id][j];
 			hed_data_type dir = m.edges[e_id]->p2->x > m.edges[e_id]->p1->x ? hed_data_type(1.0) : hed_data_type(-1.0); 
-			hedsol.e[e_id] += dir * sin(t) * dt;
+			hedsol.e[e_id] += dir * sin(t*.1) * hedsol.dt;
 		}
-		//hedsol.calc_e();
+		hedsol.calc_e();
 		hedsol.calc_h();
-		of.open(("fields/fields"+std::to_string(step)+".debug").c_str());
-		for(size_t e_id=0; e_id != m.edges.size(); e_id++)
-			of << *(m.edges[e_id]) << " " << hedsol.e[e_id];
-		for(size_t t_id=0; t_id != m.triangles.size(); t_id++)
-			of << *(m.triangles[t_id]) << " " << hedsol.h[t_id];
-		of.close();
+    if(step%10 == 0)
+    {
+      of.open(("fields/fields"+std::to_string(step)+".debug").c_str());
+      for(size_t e_id=0; e_id != m.edges.size(); e_id++)
+        of << *(m.edges[e_id]) << " " << hedsol.e[e_id];
+      for(size_t t_id=0; t_id != m.triangles.size(); t_id++)
+        of << *(m.triangles[t_id]) << " " << hedsol.h[t_id];
+      of.close();
+    }
 		step++;
-		t += dt;
+		t += hedsol.dt;
 	}
 	
 

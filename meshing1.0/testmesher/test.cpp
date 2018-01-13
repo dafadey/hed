@@ -39,7 +39,7 @@ int main()
   of.open("mesh.debug");
   of.close();
   
-  for(int i=0; i!=15; i++)
+  for(int i=0; i!=1; i++)
   {
     for(int j=0; j!=7; j++)
       m.improve_seeding(seed,seed*0.1);
@@ -78,6 +78,22 @@ int main()
   std::cout << "=======+SUMMARY======\n\tnumber of triangles: " << m.triangles.size() << "\n"
             << "\tnumber of edges:" << m.edges.size() << "\n"
             << "\tnumber of nodes:" << m.nodes.size() << "\n";
+
+	m.orient();
+	std::cout << "orient is done\n";
+	m.build_edges();
+	std::cout << "edges are built\n";
+	m.fill_ids();
+	std::cout << "ids are added to elements\n";
+
+  for(auto t : m.triangles)
+  {
+    std::cout << *t << "\n";
+    for(auto e : t->edges)
+    {
+      std::cout << *e << "\n";
+    }
+  }
   
   return 0;
 }
