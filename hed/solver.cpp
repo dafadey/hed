@@ -21,6 +21,8 @@ void hed_data::calc_j()
     const ssize_t eid = i; // = m.edges[i].id;
     const ssize_t n0 = m->edges[eid]->p1->id;
     const ssize_t n1 = m->edges[eid]->p2->id;
+    if(n[n0]== hed_data_type(.0) || n[n1] == hed_data_type(.0))
+      continue;
     j[i] += hed_data_type(.5) * (n[n0] + n[n1]) * e[i] * dt;
   }
 }
