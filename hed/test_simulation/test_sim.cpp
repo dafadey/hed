@@ -23,8 +23,13 @@ int main()
   double seed=3.0;
   
   m.seed_geometry(seed);
+  of.open("sg.debug", std::ios_base::app);
+  for(auto n : m.nodes)
+    of << *n;
   std::cout << "seed geometry is done\n";
   m.seed_volume(seed);
+  of.close();
+
   std::cout << "seed volume is done\n";
   m.triangulate();
   std::cout << "triangulate is done\n";
