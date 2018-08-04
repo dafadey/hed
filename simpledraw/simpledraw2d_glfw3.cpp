@@ -119,18 +119,27 @@ struct point
 static point*** charmap;
 }//namespace
 
-extern char _binary_font_dat_start;
-extern char _binary_font_dat_end;
+#ifdef __MINGW32__
+#define FONT_START binary_font_dat_start
+#define FONT_END binary_font_dat_end
+#else
+#define FONT_START _binary_font_dat_start
+#define FONT_END _binary_font_dat_end
+#endif
+
+extern char FONT_START;
+extern char FONT_END;
 
 __attribute__((constructor)) void fadey_onload()
 {
 	simpledraw_impl::charmap = new simpledraw_impl::point**[256];
 	for(size_t i = 0; i != 256; i++)
 		simpledraw_impl::charmap[i] = nullptr;
-	//printf("loading simpledrawlibrary, loading embedded font\n");
+	
+  //printf("loading simpledrawlibrary, loading embedded font of size %ld\n",(size_t) (&FONT_END) - (size_t) (&FONT_START));
 
 	std::stringstream ss;
-	ss.write(&_binary_font_dat_start, (size_t) (&_binary_font_dat_end) - (size_t) (&_binary_font_dat_start));
+	ss.write(&FONT_START, (size_t) (&FONT_END) - (size_t) (&FONT_START));
 	char curchar = 0;
 	std::vector<std::vector<simpledraw_impl::point>> curdrawing;
 	int i = 0;
@@ -768,7 +777,11 @@ void* GLloop(void*)
 			glfwWaitEvents();
 		display(win);
 		glfwSwapBuffers(win);
-		usleep(1000);
+		#ifdef __MINGW32__
+    Sleep(1);
+    #else
+    usleep(1000);
+    #endif
 	}
 	printf("fadey_draw: quitting... preparing to destroy data\n");
 	pthread_mutex_lock(&data_update_mutex);

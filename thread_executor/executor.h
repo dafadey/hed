@@ -7,7 +7,7 @@
 struct context
 {
   //context(int);
-  context() : active(false), id(-1), f_ptr(NULL), arg_ptr(NULL), mtx(), busy_mtx() {}
+  context() : active(false), id(-1), f_ptr(nullptr), arg_ptr(nullptr), mtx(), busy_mtx() {}
   ~context();
   
   void init(int) VOLATILE;
@@ -48,11 +48,13 @@ struct context
 void *th_worker(void* _ctx_ptr)
 {
   context* ctx_ptr = (context*) _ctx_ptr;
-  ctx_ptr->busy_unlock();
   ctx_ptr->active = true;
+  ctx_ptr->busy_unlock();
   while(ctx_ptr->active)
   {
     ctx_ptr->lock();
+    //for debug:
+    //std::cout << "worker #" << ctx_ptr->id << ", running function " << reinterpret_cast<void*>(ctx_ptr->f_ptr) << ", with args " << ctx_ptr->arg_ptr << '\n';
     if(ctx_ptr->f_ptr)
       ctx_ptr->f_ptr(ctx_ptr->arg_ptr);
     ctx_ptr->busy_unlock();
@@ -86,11 +88,14 @@ struct executor
   {
     threads = new VOLATILE context[n];
     for(int i=0;i!=n;i++)
+      threads[i].init(i);
+    for(int i=0;i!=n;i++)
+    {
       threads[i].start_thread();
-    for(int i=0;i!=n;i++)
       threads[i].busy_lock();
-    for(int i=0;i!=n;i++)
-      threads[i].busy_unlock();
+    }
+    for(int thid(0); thid!=sz; thid++)
+      threads[thid].unlock();
   }
   int sz;
   VOLATILE context* threads;
@@ -106,12 +111,7 @@ struct executor
   void sync()
   {
     for(int thid(0); thid!=sz; thid++)
-    {
-      threads[thid].busy_lock();
-      threads[thid].f_ptr = NULL;
-      threads[thid].arg_ptr = NULL;
-      threads[thid].unlock();
-    }
+	  exec(nullptr, nullptr, thid);
   }
   
   void finish()
