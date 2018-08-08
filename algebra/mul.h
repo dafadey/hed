@@ -26,11 +26,11 @@ namespace algebra
           continue;
         size_t a_idx(0);
         size_t b_idx(0);
-        size_t a_id = arow[a_idx].id;
-        size_t b_id = bcol[b_idx].id;
         T _res(0);
         while(true)
         {
+          size_t a_id = arow[a_idx].id;
+          size_t b_id = bcol[b_idx].id;
           if(a_id < b_id)
             a_idx++;
           else if(a_id > b_id)

@@ -15,8 +15,8 @@ int main(int argc, char* argv[])
   int seed = (int) time(NULL);
   std::cout << "seed is " << seed << '\n';
   srand(seed);
-  size_t Nx = 33;
-  size_t Ny = 33;
+  size_t Nx = 513;
+  size_t Ny = 1023;
   if(argc>1)
     Nx=atoi(argv[1]);
   if(argc>2)
@@ -68,18 +68,14 @@ int main(int argc, char* argv[])
   }
 
   
-  //std::cout << "preparing sparse matrixes...\n";
-  //As.make_rows_and_cols();
-  //Bs.make_rows_and_cols();
-  //std::cout << "\tdone\n";
   std::cout << "regular multiplication...\n";
   auto C = A * B;
   std::cout << "\tdone\n";
   std::cout << "sparse multiplication...\n";
   auto Cs = As * Bs;
   std::cout << "\tdone\n";
-  As.dump();
-  Bs.dump();
+  //As.dump();
+  //Bs.dump();
   std::cout << "computation is done, running test...\n";
   
   //the test
