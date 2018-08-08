@@ -63,7 +63,28 @@ int main()
   auto Cs = As * Bs;
   Cs.dump("As * Bs", "\t\t");
   
-  std::cout << "mul test:\n";
-  
-  return 0;
+  //the test
+  bool failed(false);
+  for(size_t r(0); r != C.dimy; r++)
+  {
+    for(size_t c(0); c != C.dimx; c++)
+    {
+      for(auto& d : Cs.data)
+      {
+        if(d[0] == c && d[1] == r)
+        {
+          if(d.val != C[r][c])
+          {
+            std::cerr << "ERROR: Cs[" << r << ", " << c << "](" << d.val << ") != C[" << r << ", " << c << "](" << C[r][c] << ")\n";
+            failed = true;
+          }
+        }
+      }
+    }
+  }
+  if(failed)
+    std::cout << "test failed\n";
+  else
+    std::cout << "test passed\n";
+  return failed ? -1 : 0;
 }

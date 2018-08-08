@@ -1,3 +1,5 @@
 #!/bin/bash
 
 g++ -O3 test.cpp -o test
+g++ -O3 random_test.cpp -o random_test
+
