@@ -50,7 +50,11 @@ int main(int argc, char* argv[])
         As.add_item(c, r, A.get(c, r));
     }
   }
-
+  
+  //std::cout << "making sparce coherent...\n";
+  As.make_rows_and_cols();
+  
+  std::cout << "testing...\n";
   //the test
   bool failed(false);
   for(size_t r(0); r != A.dimy; r++)

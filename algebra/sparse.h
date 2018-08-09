@@ -47,11 +47,11 @@ struct sparse_matrix
     else
     {
       auto itr = std::lower_bound(rows.begin(), rows.end(), line(row), [](const line& l0, const line& l1) {return l0.id < l1.id;});
-      if(itr == rows.end())
+      if(itr == rows.end() || itr->id != row)
         return T(0);
       auto& r = *itr;
       auto itc = std::lower_bound(r.begin(), r.end(), item_reduced(col), [](const item_reduced& ir0, const item_reduced& ir1) {return ir0.id < ir1.id;});
-      if(itr == rows.end())
+      if(itc == r.end() || itc->id != col)
         return T(0);
       return itc->val;
     }
