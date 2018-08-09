@@ -14,7 +14,7 @@ struct matrix : public std::vector<std::vector<T>>
     for(size_t c(0); c != dimy; c++)
     {
       this->push_back(std::vector<T>());
-      this->back().resize(dimx);
+      this->back().resize(dimx, T(0));
     }
   }
   size_t dimx;

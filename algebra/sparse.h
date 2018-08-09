@@ -59,6 +59,8 @@ struct sparse_matrix
 
   // helpers
   bool coherent; // means cache structures has all data
+  size_t dimx;
+  size_t dimy;
   
   struct item_reduced
   {
@@ -106,6 +108,8 @@ struct sparse_matrix
       for(auto& l : *lines_ptr[i])
         sort(l.begin(), l.end(), [](const item_reduced& ir0, const item_reduced& ir1) { return ir0.id < ir1.id;});
     }
+    dimx = dim[0];
+    dimy = dim[1];
     coherent = true;
   }
   

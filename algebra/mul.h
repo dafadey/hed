@@ -8,13 +8,15 @@
 namespace algebra
 {
   template <typename T>
-  sparse_matrix<T> operator*(sparse_matrix<T>& a, sparse_matrix<T>& b)
+  sparse_matrix<T> operator*(const sparse_matrix<T>& a, const sparse_matrix<T>& b)
   {
     sparse_matrix<T> res;
-    if(!a.coherent)
-      a.make_rows_and_cols();
-    if(!b.coherent)
-      b.make_rows_and_cols();
+    //if(!a.coherent)
+    //  a.make_rows_and_cols();
+    //if(!b.coherent)
+    //  b.make_rows_and_cols();
+    if(!a.coherent || !b.coherent)
+	  std::cerr << "algebra::multiplication error. please make your matrices coherent. run meke_rows_and_cols() for each.\n";
     //multiplication
     for(const auto& bcol : b.cols)
     {

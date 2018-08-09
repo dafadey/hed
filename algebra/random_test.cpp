@@ -25,14 +25,6 @@ int main(int argc, char* argv[])
   std::cout << "setting regular matrixes...\n";
   algebra::matrix<double> A(Nx, Ny);
   algebra::matrix<double> B(Ny, Nx);
-  for(int r=0; r!=Ny; r++)
-  {
-    for(int c=0; c!=Nx; c++)
-    {
-      A.set(c, r, 0.0);
-      B.set(r, c, 0.0);
-    }
-  }
   algebra::sparse_matrix<double> As;
   algebra::sparse_matrix<double> Bs;
   for(int i(0); i < 13 * sqrt(Nx * Ny); i++)
