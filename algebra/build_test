@@ -1,5 +1,35 @@
 #!/bin/bash
 
-g++ -O3 test.cpp -o test
-g++ -O3 random_test.cpp -o random_test
+# test build system
+# builds single <test>.cpp files into <test> binaries
+#
+# Arguments:
+#
+#    takes <test> as single argumet for individual test build
+#
+#    without argumets lists current directory and builds all .cpp
+#    files that have "test" pattern in it's names
 
+build()
+{
+  name=$1
+  echo "building $1.cpp"
+  g++ -O3 -march=native $1.cpp -o $1 2>>err.log
+  if [ $? -eq 0 ]; then
+    echo "   done!"
+  else
+    echo "   failed. see err.log for details"
+fi
+}
+
+rm -f err.log
+
+if [ $# -eq 0 ]; then
+  echo building all
+  list=`ls | grep test | grep cpp$ | sed 's/.cpp//g'`
+  for i in ${list}; do
+    build $i
+  done
+else
+  build $1
+fi
