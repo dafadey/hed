@@ -73,4 +73,4 @@ namespace algebra
     }
     return res;
   }
-}
+}//namespace

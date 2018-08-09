@@ -32,11 +32,37 @@ struct sparse_matrix
     coherent = false;
   }
 
+  T get(size_t col, size_t row)
+  {
+    if(!coherent)
+    {
+      for(const auto& i : data)
+      {
+        if(i[0] != col || i[1] != row)
+          continue;
+        return i.val;
+      }
+      return T(0);
+    }
+    else
+    {
+      auto itr = std::lower_bound(rows.begin(), rows.end(), line(row), [](const line& l0, const line& l1) {return l0.id < l1.id;});
+      if(itr == rows.end())
+        return T(0);
+      auto& r = *itr;
+      auto itc = std::lower_bound(r.begin(), r.end(), item_reduced(col), [](const item_reduced& ir0, const item_reduced& ir1) {return ir0.id < ir1.id;});
+      if(itr == rows.end())
+        return T(0);
+      return itc->val;
+    }
+  }
+
   // helpers
   bool coherent; // means cache structures has all data
   
   struct item_reduced
   {
+    item_reduced(size_t _id) : id(_id), val(0) {}
     item_reduced(size_t _id, const T& value) : id(_id), val(value) {}
     item_reduced(const item& itm, int coord /*0 for column, 1 for row*/) : id(itm[coord]), val(itm.val) {}
     size_t id;
@@ -111,4 +137,4 @@ struct sparse_matrix
   }
 
 };
-};//namespace
+}//namespace

@@ -41,4 +41,4 @@ struct matrix : public std::vector<std::vector<T>>
     }
   }
 };
-};//namespace
+}//namespace
