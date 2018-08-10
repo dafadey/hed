@@ -3,42 +3,49 @@
 #pragma once
 
 #include "mul.h"
+#include <cmath>
 
 namespace algebra
 {
   template <typename T>
-  sparse_matrix<T> jacobi_rotate(sparse_matrix<T>& a, size_t col, size_t row)
+  sparse_matrix<T> jacobi_rotate(sparse_matrix<T>& A, size_t col, size_t row)
   {
     if(col == row)
-      return a;
+      return A;
     
-    if(!a.coherent)
-      a.make_rows_and_cols();
+    if(!A.coherent)
+      A.make_rows_and_cols();
     
-    sparse_matrix<T> p;
-    sparse_matrix<T> p_1;
-    T arg = a.get(col,row);
-    T cs;
-    T sn;
+    sparse_matrix<T> P;
+    sparse_matrix<T> P_1;
+    T a = A.get(col,col);
+    T b = A.get(row,row);
+    T d = A.get(col,row);
+    T x = d * d / ((a - b) * (a - b) + 4.0 * d * d);
+    T c = sqrt(.5 + sqrt(.25 - x));
+    T s = sqrt(.5 - sqrt(.25 - x));
     
-    for(size_t i(0); i!= a.dimx; i++)
+    for(size_t i(0); i!= A.dimx; i++)
     {
       if( i == col || i == row )
       {
-        p.add_item(i, i, cs);
-        p_1.add_item(i, i, cs);
+        P.add_item(i, i, c);
+        P_1.add_item(i, i, c);
         continue;
       }
-      p.add_item(i, i, T(1));
-      p_1.add_item(i, i, T(1));
+      P.add_item(i, i, T(1));
+      P_1.add_item(i, i, T(1));
     }
     
-    p.add_item(col, row , sn);
-    p_1.add_item(col, row , -sn);
-    p.add_item(row, col , -sn);
-    p_1.add_item(row, col , sn);
-    
-    return p * a * p_1;
+    P.add_item(col, row , s);
+    P_1.add_item(col, row , -s);
+    P.add_item(row, col , -s);
+    P_1.add_item(row, col , s);
+    P.make_rows_and_cols();
+    P_1.make_rows_and_cols();
+
+    std::cout << "1\n";
+    return P * A * P_1;
   }
   
   /*

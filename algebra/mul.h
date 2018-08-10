@@ -16,7 +16,10 @@ namespace algebra
     //if(!b.coherent)
     //  b.make_rows_and_cols();
     if(!a.coherent || !b.coherent)
-	  std::cerr << "algebra::multiplication error. please make your matrices coherent. run meke_rows_and_cols() for each.\n";
+    {
+      std::cerr << "algebra::multiplication error. please make your matrices coherent. run meke_rows_and_cols() for each.\n";
+      return res;
+    }
     //multiplication
     for(const auto& bcol : b.cols)
     {
