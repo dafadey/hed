@@ -31,7 +31,8 @@ struct matrix : public std::vector<std::vector<T>>
   
   void dump(const std::string name = "", const std::string indent = "")
   {
-    std::cout << name << '\n';
+    if(name != "")
+      std::cout << name << '\n';
     for(size_t r(0); r != dimy; r++)
     {
       std::cout << indent;

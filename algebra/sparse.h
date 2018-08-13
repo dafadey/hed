@@ -79,6 +79,15 @@ struct sparse_matrix
 
   std::vector<line> rows;
   std::vector<line> cols;
+  
+  void clear()
+  {
+    dimx=0;
+    dimy=0;
+    rows.clear();
+    cols.clear();
+    data.clear();
+  }
 
   void make_rows_and_cols()
   {
@@ -115,7 +124,8 @@ struct sparse_matrix
   
   void dump(const std::string name = "", const std::string indent = "")
   {
-    std::cout << name << '\n';
+    if(name != "")
+      std::cout << name << '\n';
     if(!coherent)
     {
       std::cout << indent;
