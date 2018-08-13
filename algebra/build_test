@@ -17,8 +17,9 @@ build()
   name=$1
   echo "building $1.cpp"
   g++ -O3 -march=native $1.cpp -o $1 2>>err.log
-  (( status |= $? ))
-  if [ $? -eq 0 ]; then
+  let loc_status=$?
+  (( status |= ${loc_status} ))
+  if [ ${loc_status} -eq "0" ]; then
     echo "   done!"
   else
     echo "   failed. see err.log for details"
