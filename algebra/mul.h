@@ -21,17 +21,22 @@ namespace algebra
       return res;
     }
     //multiplication
+    std::vector<T> _res;
+    _res.resize(std::min(b.cols.size(), a.rows.size()));
     for(const auto& bcol : b.cols)
     {
       if(bcol.size() == 0)
         continue;
       for(const auto& arow : a.rows)
       {
+        for(auto& it : _res)
+          it = T(0);
         if(arow.size() == 0)
           continue;
         size_t a_idx(0);
         size_t b_idx(0);
-        T _res(0);
+        T __res(0);
+        size_t muls(0);
         while(true)
         {
           size_t a_id = arow[a_idx].id;
@@ -42,16 +47,24 @@ namespace algebra
             b_idx++;
           else /* == */
           {
-            _res += arow[a_idx].val * bcol[b_idx].val;
+            _res[muls] = arow[a_idx].val * bcol[b_idx].val;
             a_idx++;
             b_idx++;
+            muls++;
           }
           
           //std::cout << a_idx << ", " << b_idx << " limits are: " << arow.size() << ", " << bcol.size() << '\n';
           if(a_idx == arow.size() || b_idx == bcol.size())
             break;
         }
-        res.add_item(bcol.id, arow.id, _res);
+        if(!muls)
+          continue;
+        sort(_res.begin(), _res.end(), [](const T& v0, const T& v1) {return v0 > v1;});
+        for(const auto& it : _res)
+          __res += it;
+        if(__res == T(0))
+          continue;
+        res.add_item(bcol.id, arow.id, __res);
       }
     }
     res.make_rows_and_cols();
