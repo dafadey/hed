@@ -177,7 +177,7 @@ namespace svg
             std::cout << "adding master point (" << pt.x << ", " << pt.y << ")" << std::endl;
             #endif
             nodes.push_back(pt);
-						state = ADD_SEG;
+            state = ADD_SEG;
           }
         }
         else if(state == ADD_SEG)
@@ -247,7 +247,7 @@ namespace svg
               bz.p2 = pt;
             if(ptid % 3 == 2 && i % 2 == 1) // bz is ready
             {
-							#ifdef VERBOSE
+              #ifdef VERBOSE
               std::cout << "adding bz3 point (" << pt.x << ", " << pt.y << ")" << std::endl;
               #endif
               bz.p3 = pt;
@@ -334,6 +334,32 @@ namespace svg
       return 1;
   }
 
+  bool sfind(std::string& s, std::string what)
+  {
+    //std::cout << "finding " << what << " in " << s << '\n';
+    if(s.size() < what.size())
+      return false;
+    for(size_t i(0); i != s.size() - what.size() + 1; i++)
+    {
+      bool found(true);
+      for(size_t j(i); j != i + what.size(); j++)
+      {
+        //std::cout << "\tcomp " << (char) s.c_str()[j] << " vs " << (char) what.c_str()[j - i] << '\n'; 
+        if(s.c_str()[j] != what.c_str()[j - i])
+        {
+          found = false;
+          break;
+        }
+      }
+      if(found)
+      {
+        //std::cout << "FOUND!\n";
+        return true;
+      }
+    }
+    return false;
+  }
+
   int importall(std::string filename, std::vector<std::vector<point>>& contours, double tol)
   {
     std::ifstream infile(filename);
@@ -344,14 +370,14 @@ namespace svg
     int path_count(0);
     while(std::getline(infile, line))
     {
-      if(line.find("<path") != std::string::npos)
+      if(sfind(line,"<path"))
       {
         inside_path = true;
         inside_d = false;
         contours.push_back(std::vector<point>());
         path_line = std::string();
       }
-      if(line.find("/>") != std::string::npos && inside_path)
+      if(sfind(line,"/>") && inside_path)
       {
         if(parse_path(path_line, contours.back(), tol))
           contours.back().push_back(*(contours.back().begin())); // close if needed
@@ -359,15 +385,17 @@ namespace svg
         inside_path = false;
         inside_d = false;
       }
-      if(inside_path && line.find("=") != std::string::npos)
+      if(inside_path && sfind(line,"="))
         inside_d = false;
-      if(inside_path && line.find(" d=") != std::string::npos)
+      if(inside_path && sfind(line," d="))
         inside_d = true;
 
       if(inside_d)
         path_line += line;
     }
     infile.close();
+    for(auto& c : contours)
+      std::cout << "found countour of size " << c.size() << std::endl;
     return 0;
   }
 
