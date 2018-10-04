@@ -14,6 +14,27 @@ void hed_data::calc_e()
   }
 }
 
+void hed_data::w_e_weights()
+{
+  for(int i(0); i != e.size(); i++)
+  {
+    const ssize_t eid = i; // = m.edges[i].id;
+    const ssize_t ir = m->edges[eid]->t1 ? m->edges[eid]->t1->id : -1;
+    const ssize_t il = m->edges[eid]->t2 ? m->edges[eid]->t2->id : -1;
+    //e[i] -= ((ir == -1 ? hed_data_type(.0) : h[ir]) -
+    //         (il == -1 ? hed_data_type(.0) : h[il])) * w->edgs[i][1];
+    if(energy_weights.find(std::make_pair(i, ir)) == energy_weights.end())
+      energy_weights[std::make_pair(i, ir)] = .0;
+    
+    if(energy_weights.find(std::make_pair(i, il)) == energy_weights.end())
+      energy_weights[std::make_pair(i, il)] = .0;
+      
+    energy_weights[std::make_pair(i, ir)] += - w->edgs[i][0];
+    
+    energy_weights[std::make_pair(i, il)] +=   w->edgs[i][0];
+  }
+}
+
 void hed_data::calc_j()
 {
   for(int i(0); i != j.size(); i++)
@@ -41,6 +62,24 @@ void hed_data::calc_h()
       //std::cout << w->tris[i][0] * w->edgs[eid][0] << "\n";
     }
     h[i] += db * dt * w->tris[i][0];
+  }
+}
+
+void hed_data::w_h_weights()
+{
+  for(int i(0); i != h.size(); i++)
+  {
+    const ssize_t tid = i; // = m.triangles[i].id;
+    hed_data_type db(hed_data_type(.0));
+    for(size_t eid_local(0); eid_local != 3; eid_local++)
+    {
+      const size_t eid = m->triangles[tid]->edges[eid_local]->id;
+
+      if(energy_weights.find(std::make_pair(eid, i)) == energy_weights.end())
+        energy_weights[std::make_pair(eid, i)] = .0;
+       
+      energy_weights[std::make_pair(eid, i)] += (m->edges[eid]->t1 == m->triangles[tid] ? hed_data_type(1.0) : hed_data_type(-1.0)) * w->edgs[eid][0];
+    }
   }
 }
 

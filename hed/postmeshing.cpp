@@ -58,6 +58,8 @@ void calculate_weights(weights* w, const mesh* m)
   for(auto t : m->triangles)
     w->tris.push_back(std::array<hed_data_type, TRI_WEIGHTS>{{1.0 / t->area()}});
   
+  std::cout << "triangle weights are done\n";
+  
   for(auto e : m->edges)
   {
     const auto hs = get_central_heights(e);
@@ -65,15 +67,18 @@ void calculate_weights(weights* w, const mesh* m)
     const vec_type p2(e->p2);
     w->edgs.push_back(std::array<hed_data_type, EDGE_WEIGHTS>{{(p2 - p1).norm(), 1.0 / (hs[0] + hs[1])}});
   }
-
+   
   for(auto p : m->nodes)
   {
     double s(.0);
     for(auto e : p->edges)
     {
       size_t eid = e->id;
+      //std::cout << "***" << eid << '\n';
       s += 0.25 * w->edgs[eid][0] * w->edgs[eid][1];
     }
     w->nds.push_back(std::array<hed_data_type, NODE_WEIGHTS>{{1.0 / s}});
   }
+
+  std::cout << "node weights are done\n";
 }

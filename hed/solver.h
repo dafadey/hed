@@ -1,6 +1,7 @@
 #pragma once
 #include <mesh.h>
 #include "postmeshing.h"
+#include <map>
 
 struct hed_data
 {
@@ -20,5 +21,10 @@ struct hed_data
   void calc_e();
   void calc_h();
   void calc_j();
+  
+  //diagnostics
+  std::map<std::pair<ssize_t, ssize_t>, hed_data_type> energy_weights;
+  void w_e_weights();
+  void w_h_weights();
 };
 

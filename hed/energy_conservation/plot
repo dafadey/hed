@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ -f $1.asy ]; then
+	echo "sorry cannot create $1.asy, since file already exists. aborting."
+	exit 1
+fi
+echo "file f=input(\"$1\").line();" > $1.asy
+cat plot.asy >> $1.asy
+asy $1.asy $2
+rm -f $1.asy
+#convert $1.png -background white -flatten $1.png
+
