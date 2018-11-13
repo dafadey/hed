@@ -2,8 +2,10 @@
 
 string[] fns;
 
-for(int i=239; i>=0; --i)
+
+for(int i=347; i>=0; --i)
   fns.push("fields"+string(i)+".debug");
+
 
 
 /*

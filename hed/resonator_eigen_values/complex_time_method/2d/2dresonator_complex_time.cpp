@@ -123,9 +123,9 @@ struct resonator
       {
         XY c = m.triangles[t_i]->centroid();
         if(resonator_poly.is_inside(c))
-          of << c << " -1";
+          of << c << " -1" << '\n';
         else
-          of << c << " 1";
+          of << c << " 1" << '\n';
 
         if(!resonator_poly.is_inside(c))
         {
@@ -173,22 +173,22 @@ struct resonator
     for(size_t n_id=0; n_id != m.nodes.size(); n_id++)
     {
       //std::cout << n_id << std::endl;
-      of << *(m.nodes[n_id]) << " " << (n_id==54 ? -1 : 0);
+      of << *(m.nodes[n_id]) << " " << (n_id==54 ? -1 : 0) << '\n';
     }
     size_t ntimes54(0);
     for(size_t e_id=0; e_id != m.edges.size(); e_id++)
     {
       //std::cout << e_id << std::endl;
-      of << *(m.edges[e_id]) << " " << (e_id==275 || e_id==276 ? -1 : 0);
+      of << *(m.edges[e_id]) << " " << (e_id==275 || e_id==276 ? -1 : 0) << '\n';
     }
     for(size_t t_id=0; t_id != m.triangles.size(); t_id++)
     {
       //std::cout << t_id << std::endl;
-      of << *(m.triangles[t_id]) << " " << (t_id==165 || t_id==178 || t_id==181 ? -1 : 0);
+      of << *(m.triangles[t_id]) << " " << (t_id==165 || t_id==178 || t_id==181 ? -1 : 0) << '\n';
     }
     
     for(auto& fe : m.fixed_edges)
-      of << IEDGE(fe[0], fe[1]) << " 1";
+      of << IEDGE(fe[0], fe[1]) << " 1" << '\n';
     of.close();
     
     calculate_weights(&wgts, &m);
@@ -367,7 +367,7 @@ int main(int argc, char* argv[])
   {
     std::ofstream of("mesh.debug", std::ios_base::app);
     for(auto e_i : r.bndry)
-      of << *r.m.edges[e_i] << ' ' << -1;
+      of << *r.m.edges[e_i] << ' ' << -1 << '\n';
     of.close();
   }
   
@@ -451,9 +451,9 @@ int main(int argc, char* argv[])
     {
       std::ofstream of(("fields"+std::to_string(rsi)+".debug").c_str());//, std::ios_base::app);
       for(size_t e_i(0); e_i != rs[rsi].m.edges.size(); e_i++)
-        of << *rs[rsi].m.edges[e_i] << ' ' << rs[rsi].E[e_i].real();
+        of << *rs[rsi].m.edges[e_i] << ' ' << rs[rsi].E[e_i].real() << '\n';
       for(size_t t_i(0); t_i != rs[rsi].m.triangles.size(); t_i++)
-        of << *rs[rsi].m.triangles[t_i] << ' ' << rs[rsi].B[t_i].imag();
+        of << *rs[rsi].m.triangles[t_i] << ' ' << rs[rsi].B[t_i].imag() << '\n';
       of.close();
     }
   }
