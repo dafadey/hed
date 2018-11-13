@@ -1,4 +1,4 @@
-file f=input("mesh.debug").word();
+file f=input("mesh.debug").line();
 real s0=0.0338797;
 
 string[] data=f;
@@ -15,43 +15,56 @@ struct element
   pen fill;
 };
 
-element[] elements;
+pen color(real v)
+{
+  return (0.5-0.5*cos(v * pi * 2)) * green
+       + (0.5+0.5*cos(v * pi)) * red
+       + (0.5-0.5*cos(v * pi)) * blue;
+}
 
+element[] elements;
 for(int i=0;i!=data.length;++i)
 {
   string line=data[i];
-  //string[] items=split(line," ");
-  if(data[i] == "p")
+  string[] items=split(line," ");
+  if(items[0] == "")
+    continue;
+  if(items[0] == "p")
   {
-    pts.push(((real)data[i+1],(real)data[i+2]));
+    pts.push(((real)items[1],(real)items[2]));
     i+=2;
   }
-  if(data[i] == "e")
+  if(items[0] == "e")
   {
     element edge;
-    pair p1=((real)data[i+1],(real)data[i+2]);
-    pair p2=((real)data[i+3],(real)data[i+4]);
+    pair p1=((real)items[1],(real)items[2]);
+    pair p2=((real)items[3],(real)items[4]);
     pair l=p2-p1;
-    edge.g=((real)data[i+1],(real)data[i+2])--((real)data[i+3],(real)data[i+4]);
+    edge.g=((real)items[1],(real)items[2])--((real)items[3],(real)items[4]);
     real ll=sqrt(l.x^2+l.y^2);
     edge.outline = sqrt(ll < 3 ? (3-ll)/3 : 0) * red + sqrt(ll > 3 ? (ll-3 < 3 ? (ll-3)/3 : 1) : 0) * blue;
     edge.fill=nullpen;
-    //pts.push(((real)data[i+1],(real)data[i+2]));
-    //pts.push(((real)data[i+3],(real)data[i+4]));
-    elements.push(edge);
+//    elements.push(edge);
   }
-  if(data[i] == "t")
+  if(items[0] == "t")
   {
     element tri;
-    tri.g=((real)data[i+1],(real)data[i+2])--((real)data[i+3],(real)data[i+4])--((real)data[i+5],(real)data[i+6])--cycle;
-    tri.outline=blue;
-    tri.fill=nullpen;
+    tri.g=((real)items[1],(real)items[2])--((real)items[3],(real)items[4])--((real)items[5],(real)items[6])--cycle;
+    tri.outline=nullpen;
+    if(items.length > 7)
+    {
+      real v = (real) items[7];
+      tri.fill = color(v*7);
+      tri.outline = black;
+    }
+    else
+      tri.fill=blue+red*0.7+green*0.8;
     elements.push(tri);
   }
-  if(data[i] == "box")
+  if(items[0] == "box")
   {
     element box;
-    box.g = ((real)data[i+1],(real)data[i+2]) -- ((real)data[i+3],(real)data[i+2]) -- ((real)data[i+3],(real)data[i+4]) -- ((real)data[i+1],(real)data[i+4]) -- cycle;
+    box.g = ((real)items[1],(real)items[2]) -- ((real)items[3],(real)items[2]) -- ((real)items[3],(real)items[4]) -- ((real)items[1],(real)items[4]) -- cycle;
     box.outline=0.5*green;
     box.fill=nullpen;
     elements.push(box);
@@ -59,7 +72,7 @@ for(int i=0;i!=data.length;++i)
   if(data[i] == "box_fill")
   {
     element box;
-    box.g = ((real)data[i+1],(real)data[i+2]) -- ((real)data[i+3],(real)data[i+2]) -- ((real)data[i+3],(real)data[i+4]) -- ((real)data[i+1],(real)data[i+4]) -- cycle;
+    box.g = ((real)items[1],(real)items[2]) -- ((real)items[3],(real)items[2]) -- ((real)items[3],(real)items[4]) -- ((real)items[1],(real)items[4]) -- cycle;
     box.outline=0.5*green;
     box.fill=orange;
     elements.push(box);
@@ -93,8 +106,10 @@ for(int i=0;i!=elements.length;++i)
 {
   if(elements[i].fill==nullpen)
     draw(elements[i].g, elements[i].outline);
+  else if(elements[i].outline==nullpen)
+    fill(elements[i].g, elements[i].fill);
   else
-    filldraw(elements[i].g, elements[i].outline, elements[i].fill);
+    filldraw(elements[i].g, elements[i].fill, elements[i].outline);
 }
 
 defaultpen(linewidth(2.5));

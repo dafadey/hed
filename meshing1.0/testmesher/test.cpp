@@ -1,5 +1,6 @@
 #include <triangulate.h>
 #include <mesh.h>
+#include <partition.h>
 #include <svg.h>
 #include <fstream>
 
@@ -48,10 +49,7 @@ int main()
     m.print_quality();
   }
 
-  of.open("mesh.debug", std::ios_base::app);
-  for(const auto& t : m.triangles)
-    of << IEDGE(t->p1, t->p2) << IEDGE(t->p2, t->p3) << IEDGE(t->p3, t->p1);
-  of.close();
+
 
   m.build_edges();
   std::cout << "build edges is done\n";
@@ -63,18 +61,6 @@ int main()
 
   //m.improve_seeding(3.0,2.5,true);
 
-  
-  of.open("mesh.debug", std::ios_base::app);
-//  for(const auto& t : m.triangles)
-//    of << *t;
-  for(const auto& fe : m.fixed_edges)
-  {
-    //of << IEDGE(fe[0],fe[1]);
-    of << *fe[0];
-    of << *fe[1];
-  }
-  of.close();
- 
   std::cout << "=======+SUMMARY======\n\tnumber of triangles: " << m.triangles.size() << "\n"
             << "\tnumber of edges:" << m.edges.size() << "\n"
             << "\tnumber of nodes:" << m.nodes.size() << "\n";
@@ -86,14 +72,33 @@ int main()
 	m.fill_ids();
 	std::cout << "ids are added to elements\n";
 
-  for(auto t : m.triangles)
+//  std::vector<std::vector<const ITRIANGLE*>> parts = KDpartition(m, 5);
+  std::vector<std::vector<const ITRIANGLE*>> parts = greedy_partition(m, 233);
+
+  std::cout << "paritioned to " << parts.size() << " parts\n sizes are";
+  for(const auto& p : parts)
+    std::cout << " " << p.size();
+  std::cout << '\n';
+
+  of.open("mesh.debug", std::ios_base::app);
+  for(size_t tris_id(0); tris_id != parts.size(); tris_id++)
   {
-    std::cout << *t << "\n";
-    for(auto e : t->edges)
-    {
-      std::cout << *e << "\n";
-    }
+    auto& tris = parts[tris_id];
+    for(const auto& t : tris)
+      of << *t << ' ' << (double) tris_id / (double) (parts.size() - 1) << '\n';
   }
+    
+  for(const auto& t : m.triangles)
+    of << IEDGE(t->p1, t->p2) << '\n' << IEDGE(t->p2, t->p3) << '\n' << IEDGE(t->p3, t->p1) << '\n';
   
+  for(const auto& fe : m.fixed_edges)
+  {
+    //of << IEDGE(fe[0],fe[1]);
+    of << *fe[0] << '\n';
+    of << *fe[1] << '\n';
+  }
+
+  of.close();
+ 
   return 0;
 }

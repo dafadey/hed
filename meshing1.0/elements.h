@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <array>
+#include <set>
 #include <iostream>
 
 struct ITRIANGLE;
@@ -43,6 +44,10 @@ struct ITRIANGLE
   XY* point(int /*point index 0, 1 or 2*/); //accesor
   XY centroid();
   double area();
+  bool is_boundary() const;
+  std::array<ITRIANGLE*, 3> get_neighbors() const;
+  std::set<ITRIANGLE*> get_surrounding() const;
+  
 };
 
 std::ostream&  operator<<(std::ostream&, const ITRIANGLE&);
@@ -60,6 +65,7 @@ struct IEDGE
   //IEDGE* nb2;
   ITRIANGLE* t1;
   ITRIANGLE* t2;
+  bool is_boundary() const;
   XY centroid();
 };
 

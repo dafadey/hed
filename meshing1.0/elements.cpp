@@ -85,7 +85,7 @@ bool XY::operator==(const XY& p1) const
 
 std::ostream& operator<<(std::ostream& s, const XY& p)
 {
-  return s << "\np " << p.x << " " << p.y;
+  return s << "p " << p.x << " " << p.y;
 }
 
 //ITRIANGLE::ITRIANGLE::ITRIANGLE::ITRIANGLE::ITRIANGLE::
@@ -104,6 +104,7 @@ XY* ITRIANGLE::point(int i)
 			return p3;
 			break;
 		default:
+      return nullptr;
 			break;
 	}
 }
@@ -120,15 +121,59 @@ double ITRIANGLE::area()
 	return .5 * vp(*p3 - *p1, *p2 - *p1);
 }
 
+bool ITRIANGLE::is_boundary() const
+{
+  for(auto e : edges)
+  {
+    if(e->is_boundary())
+      return true;
+  }
+	return false;
+}
+
+std::array<ITRIANGLE*, 3> ITRIANGLE::get_neighbors() const
+{
+  std::array<ITRIANGLE*, 3> output;
+  for(size_t e_id(0); e_id != edges.size(); e_id++)
+  {
+    if(edges[e_id]->t1 == this)
+      output[e_id] = edges[e_id]->t2;
+    else
+      output[e_id] = edges[e_id]->t1;
+  }
+  return output;
+}
+
+std::set<ITRIANGLE*> ITRIANGLE::get_surrounding() const
+{
+  std::set<ITRIANGLE*> outer_tris;
+  //get surroundings
+  const std::array<XY*,3> pts{{p1, p2, p3}};
+  for(auto pt : pts)
+  {
+    for(auto tt : pt->tris)
+    {
+      if(tt != this)
+        outer_tris.insert(tt);
+    }
+  }
+  return outer_tris;
+}
+
 std::ostream& operator<<(std::ostream& s, const ITRIANGLE& t)
 {
-  return s << "\nt " << t.p1->x << " " << t.p1->y
+  return s << "t " << t.p1->x << " " << t.p1->y
               << " " << t.p2->x << " " << t.p2->y
               << " " << t.p3->x << " " << t.p3->y;
 }
 
 
 //IEDGE::IEDGE::IEDGE::IEDGE::IEDGE::IEDGE::IEDGE::IEDGE::
+bool IEDGE::is_boundary() const
+{
+	return t1 == nullptr || t2 == nullptr;
+}
+
 XY IEDGE::centroid()
 {
 	XY c((p1->x + p2->x) * 0.5, (p1->y + p2->y) * 0.5);
@@ -137,6 +182,6 @@ XY IEDGE::centroid()
 
 std::ostream& operator<<(std::ostream& s, const IEDGE& e)
 {
-  return s << "\ne " << e.p1->x << " " << e.p1->y
+  return s << "e " << e.p1->x << " " << e.p1->y
               << " " << e.p2->x << " " << e.p2->y;
 }
