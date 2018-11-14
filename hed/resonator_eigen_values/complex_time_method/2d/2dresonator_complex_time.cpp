@@ -56,11 +56,153 @@
 
 typedef std::complex<double> cplx;
 
-struct resonator
+
+struct resonator_common
 {
-  resonator() : E(), B(), m(), wgts(), hedsol() {}
+  resonator_common() : E(), B() {}
   
-  resonator(const std::string& input_geo_file) : E(), B(), m(), wgts()
+  std::vector<cplx> E;
+  std::vector<cplx> B;
+  
+  double norm()
+  {
+    double n2(.0);
+    for(const auto& e : E)
+      n2 = std::max(n2, std::norm(e));
+    for(const auto& b : B)
+      n2 = std::max(n2, std::norm(b));
+    n2 = 1.0 / sqrt(n2);
+    for(auto& e : E)
+      e *= n2;
+    for(auto& b : B)
+      b *= n2;
+    return log(n2);
+  }
+};
+
+struct structured_resonator : public resonator_common
+{
+  structured_resonator() : resonator_common(), nx(0), ny(0), lx(.0), ly(.0) {}
+
+  structured_resonator(int _nx, int _ny, double _lx, double _ly) : resonator_common(), nx(_nx), ny(_ny), lx(_lx), ly(_ly)
+  {
+    B.resize(nx*ny);
+    E.resize((nx+1)*ny + (ny+1)*nx); //say Ey goes first ny*(nx+1) entries, then goes Ex - (ny+1)*nx entries
+  }
+  int nx;
+  int ny;
+  double lx;
+  double ly;
+   
+
+  
+  double step(const cplx& dt)
+  {
+    double dx=lx/(double) nx;
+    double dy=ly/(double) ny;
+    double dxdy = dx*dy;
+
+    //first do Ey
+    for(int i(0); i != (nx+1)*ny; i++)
+    {
+      int ix = i % (nx+1);
+      if(ix==0 || ix == nx)
+        continue;
+      int iy = i / (nx+1);
+      E[i] += (B[ix-1+iy*nx] - B[ix+iy*nx]) / dx * dt;
+    }
+    //now Ex
+    for(int _i((nx+1)*ny); _i != E.size(); _i++)
+    {
+      int i=_i-(nx+1)*ny;
+      int iy = i / nx;
+      if(iy==0 || iy == ny)
+        continue;
+      int ix = i % nx;
+      E[_i] += (B[ix+iy*nx] - B[ix+(iy-1)*nx]) / dy * dt;
+    }
+    
+    //zero
+    for(int i=0; i!=nx; i++)
+    {
+      E[(nx+1)*ny+i]=cplx(.0, .0);
+      E[(nx+1)*ny+i+ny*nx]=cplx(.0, .0);
+    }
+    for(int i=0; i!=ny; i++)
+    {
+      E[i*(nx+1)]=cplx(.0, .0);
+      E[i*(nx+1)+nx]=cplx(.0, .0);
+    }
+    
+    for(int i(0); i != B.size(); i++)
+    {
+      int ix = i % nx;
+      int iy = i / nx;
+      const cplx* Ey = &E.data()[0];
+      const cplx* Ex = &E.data()[(nx+1)*ny];
+      B[i] += (
+              (Ey[ix+iy*(nx+1)] - Ey[ix+1+iy*(nx+1)]) * dy + 
+              (-Ex[ix+iy*nx] + Ex[ix+(iy+1)*nx]) * dx
+              ) / dxdy * dt;
+    }
+    
+    return norm() / dt.imag();
+    
+  }
+  
+  
+  structured_resonator& operator -= (const structured_resonator& r)
+  {
+    
+    double dx=lx/(double) nx;
+    double dy=ly/(double) ny;
+    double dxdy = dx*dy;
+    cplx k(.0, .0);
+    for(int i(1); i!= E.size()-1; i++)
+      k += E[i] * r.E[i] * dxdy;
+    for(int i(0); i!= B.size(); i++)
+      k -= B[i] * r.B[i] * dxdy;
+    
+    cplx n(.0, .0);
+    for(int i(1); i!= E.size()-1; i++)
+      n += r.E[i] * r.E[i] * dxdy;
+    for(int i(0); i!= B.size(); i++)
+      n -= r.B[i] * r.B[i] * dxdy;
+    
+    k /= n;
+    for(int i(0); i!= E.size(); i++)
+      E[i] -= k * r.E[i];
+    for(int i(0); i!= B.size(); i++)
+      B[i] -= k * r.B[i];
+    
+    return *this;
+  }  
+  
+  
+  structured_resonator& operator = (const structured_resonator& r)
+  {
+    nx=r.nx;
+    ny=r.ny;
+    lx=r.lx;
+    ly=r.ly;
+    
+    E.clear();
+    B.clear();
+    
+    for(auto& e : r.E)
+      E.emplace_back(e);
+    for(auto& b : r.B)
+      B.emplace_back(b);
+    return *this;
+  }
+  
+};
+
+struct unstructured_resonator : public resonator_common
+{
+  unstructured_resonator() : resonator_common(), m(), wgts(), hedsol() {}
+  
+  unstructured_resonator(const std::string& input_geo_file, double seed=7.0) : resonator_common(), m(), wgts(), hedsol(), bndry()
   {
     std::vector<std::vector<point>> contours;
     svg::importall(input_geo_file, contours, 0.1);
@@ -73,9 +215,7 @@ struct resonator
       for(const auto& pt : c)
         m.contours.back().points.push_back(newXY(pt.x, pt.y));
     }
-    
-    double seed=7.0;
-    
+
     m.seed_geometry(seed);
     
     of.open("sg.debug", std::ios_base::app);
@@ -208,28 +348,11 @@ struct resonator
       b = cplx(.0, .0);
   }
 
-  std::vector<cplx> E;
-  std::vector<cplx> B;
   mesh m;
   weights wgts;
   hed_data hedsol;
   
   std::vector<size_t> bndry;
-  
-  double norm()
-  {
-    double n2(.0);
-    for(const auto& e : E)
-      n2 = std::max(n2, std::norm(e));
-    for(const auto& b : B)
-      n2 = std::max(n2, std::norm(b));
-    n2 = 1.0 / sqrt(n2);
-    for(auto& e : E)
-      e *= n2;
-    for(auto& b : B)
-      b *= n2;
-    return log(n2);
-  }
   
   double step(const cplx& dt)
   {
@@ -258,11 +381,11 @@ struct resonator
       }
       B[i] += db * dt * w.tris[i][0];
     }
-    
-    return norm();
+
+    return norm() / dt.imag();
   }
   
-  resonator& operator -= (const resonator& r)
+  unstructured_resonator& operator -= (const unstructured_resonator& r)
   {
     cplx k(.0, .0);
     for(int i(1); i!= E.size()-1; i++)
@@ -285,7 +408,7 @@ struct resonator
     return *this;
   }
   
-  resonator& operator = (const resonator& r)
+  unstructured_resonator& operator = (const unstructured_resonator& r)
   {
     wgts = r.wgts;
     m = r.m;
@@ -306,7 +429,7 @@ struct resonator
   }
 };
 
-std::ostream& operator << (std::ostream& os, const resonator& r)
+std::ostream& operator << (std::ostream& os, const unstructured_resonator& r)
 {
   os << r.E.size() << '\n';
   for(const auto& e : r.E)
@@ -319,10 +442,13 @@ std::ostream& operator << (std::ostream& os, const resonator& r)
 
 int main(int argc, char* argv[])
 {
+  #define UNSTRUCTURED
+  
+  #ifdef UNSTRUCTURED
   std::string filename="u_resonator.svg";
   if(argc>2)
     filename=std::string(argv[2]);
-  resonator r(filename);
+  unstructured_resonator r(filename, 13.0);
   
   std::cout << "contour edges extracted\n";
   
@@ -338,9 +464,9 @@ int main(int argc, char* argv[])
   }
   
   
-  //test copy of resonator object
+  //test copy of unstructured_resonator object
   {
-    resonator r2;
+    unstructured_resonator r2;
     r2=r;
     for(size_t i(0); i!= r.wgts.tris.size(); i++)
     {
@@ -378,32 +504,60 @@ int main(int argc, char* argv[])
     double y = e_ptr->p1->y - e_ptr->p2->y;
     min_edge = std::min(min_edge, sqrt(x * x + y * y));
   }
+  #else
+  structured_resonator r(11, 8, 101., 70.);
+  double min_edge = std::min(r.lx/(double) r.nx, r.ly/(double) r.ny);
+  std::vector<size_t> outer_edges((r.nx+r.ny)*2);
+  #endif
   
   int n=argc >= 2 ? atoi(argv[1]) : 0;
+  #ifdef UNSTRUCTURED
   cplx dt(.0, (argc>3 ? atof(argv[3]) : 0.05) * min_edge);
+  #else
+  cplx dt(.0, (argc>=3 ? atof(argv[2]) : 0.05) * min_edge);
+  #endif
   std::cerr << "doing " << n << " steps\n";
   std::cerr << "with dt=" << dt << '\n';
   double l(.0);
   
-  for(auto& e : r.E)
-    e = cplx((double) rand() / (double) RAND_MAX, .0);
+  
+  std::cout  << "filling in random values for e\n";
+  for(auto& b : r.B)
+    b = cplx(.0, 1.0+(double) rand() / (double) RAND_MAX);
   //for(auto& b : r.B)
   //  b = cplx(.0, (double) rand() / (double) RAND_MAX);
+  std::cout << "\tdone\n";
   
-  std::vector<resonator> rs(r.B.size());
+  
+  std::cout << "preparing resonators\n";
+  
+  
+  #ifdef UNSTRUCTURED
+  //std::vector<unstructured_resonator> rs(r.B.size()+r.E.size()-outer_edges.size());
+  std::vector<unstructured_resonator> rs(r.B.size());
+  #else
+  //std::vector<structured_resonator> rs(r.B.size()+r.E.size()-outer_edges.size());
+  std::vector<structured_resonator> rs(r.B.size());
+  #endif
   for(int i = 0; i != rs.size(); i++)
   {
     rs[i] = r;
+    #ifdef UNSTRUCTURED
     rs[i].bndry = r.bndry;
+    #endif
     rs[i].E = r.E;
     rs[i].B = r.B;
   }
-  
+  std::cout << "\tdone\n";
+
   std::vector<double> lambdas(rs.size());
   
   std::ofstream lf("lambdas.dat");
   lf << lambdas.size() << '\n';
 
+//#define SINGLE_THREADED
+
+#ifndef SINGLE_THREADED
   for(int i = 0; i != 10; i++)
   {
     for(int j = 0; j < rs.size(); j++)
@@ -413,17 +567,18 @@ int main(int argc, char* argv[])
       lambdas[j] = rs[j].step(dt);
     }
   }
-  
+#endif
+
   for(int i = 0; i != n; i++)
   {
-/*
+#ifdef SINGLE_THREADED
     for(int j = 0; j < rs.size(); j++)
     {
       for(int q = 0; q < j; q++)
         rs[j] -= rs[q];
       lambdas[j] = rs[j].step(dt);
     }
-*/
+#else
     #pragma omp parallel for
     for(int j = 0; j < rs.size(); j++)
       lambdas[j] = rs[j].step(dt);
@@ -434,22 +589,27 @@ int main(int argc, char* argv[])
       for(int q = 0; q < j; q++)
         rs[j] -= rs[q];
     }
+#endif
 
-    for(int j = 0; j < rs.size(); j++)
-      lf << lambdas[j] << '\n';
+    //for(int j = 0; j < rs.size(); j++)
+    //  lf << lambdas[j] << '\n';
 
     std::cout << i << '/' << n << '\n';
   }
   
+  for(int j = 0; j < rs.size(); j++)
+    lf << lambdas[j] << '\n';
+
   lf.close();
   
   for(const auto& _l : lambdas)
     std::cout << _l << '\n';
  
+  #ifdef UNSTRUCTURED
   {
     for(size_t rsi(0); rsi != rs.size(); rsi++)
     {
-      std::ofstream of(("fields"+std::to_string(rsi)+".debug").c_str());//, std::ios_base::app);
+      std::ofstream of(("fields/fields"+std::to_string(rsi)+".debug").c_str());//, std::ios_base::app);
       for(size_t e_i(0); e_i != rs[rsi].m.edges.size(); e_i++)
         of << *rs[rsi].m.edges[e_i] << ' ' << rs[rsi].E[e_i].real() << '\n';
       for(size_t t_i(0); t_i != rs[rsi].m.triangles.size(); t_i++)
@@ -457,6 +617,42 @@ int main(int argc, char* argv[])
       of.close();
     }
   }
+  #else
+  {
+    for(size_t rsi(0); rsi != rs.size(); rsi++)
+    {
+      std::ofstream of(("fields/fields"+std::to_string(rsi)+".debug").c_str());//, std::ios_base::app);
+      double dx = rs[rsi].lx/(double) rs[rsi].nx;
+      double dy = rs[rsi].ly/(double) rs[rsi].ny;
+      for(size_t e_i(0); e_i != rs[rsi].E.size(); e_i++)
+      {
+        if(e_i < (rs[rsi].nx+1)*rs[rsi].ny)
+        {
+          int i=e_i;
+          int ix = i % (rs[rsi].nx+1);
+          int iy = i / (rs[rsi].nx+1);
+          of << "e " << dx*(double)ix << ' ' << dy*(double)iy << ' ' << dx*(double)ix << ' ' << dy*(double)iy+dy << ' ' << rs[rsi].E[e_i].real() << '\n';
+        }
+        else
+        {
+          int i = e_i - (rs[rsi].nx+1)*rs[rsi].ny;
+          int ix = i % rs[rsi].nx;
+          int iy = i / rs[rsi].nx;
+          of << "e " << dx*(double)ix << ' ' << dy*(double)iy << ' ' << dx*(double)ix+dx << ' ' << dy*(double)iy << ' ' << rs[rsi].E[e_i].real() << '\n';
+        }
+      }
+      for(size_t t_i(0); t_i != rs[rsi].B.size(); t_i++)
+      {
+        int ix = t_i % rs[rsi].nx;
+        int iy = t_i / rs[rsi].nx;
+        of << "box " << (double)ix*dx << ' ' << (double)iy*dy << ' '
+                   << (double)ix*dx+dx << ' ' << (double)iy*dy+dy << ' '
+                   << rs[rsi].B[t_i].imag() << '\n';
+      }
+      of.close();
+    }
+  }
+  #endif
   
   return 0;
 }

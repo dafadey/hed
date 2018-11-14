@@ -3,8 +3,8 @@
 string[] fns;
 
 
-for(int i=347; i>=0; --i)
-  fns.push("fields"+string(i)+".debug");
+for(int i=91; i>=0; --i)
+  fns.push("fields/fields"+string(i)+".debug");
 
 
 
@@ -25,6 +25,8 @@ void plot_fields(picture pic, string fn)
   pair[] tris;
   real[][] trisfields;
   pair[][] polygons;
+  real[][] polygonfields;
+  
   for(int i=0;i!=data.length;++i)
   {
     string line=data[i];
@@ -71,6 +73,11 @@ void plot_fields(picture pic, string fn)
       p.push((x1, y1));
       p.push((x1, y0));
       polygons.push(p);
+      real[] fields;
+      for(int j=5 ; j < items.length; ++j)
+        fields.push((real) items[j]);
+      if(fields.length != 0)
+        polygonfields.push(fields);
     }
   }
 
@@ -80,6 +87,8 @@ void plot_fields(picture pic, string fn)
   write(" + " + string(edgsfields.length) + " fields");
   write("found " + string(tris.length/3) + " triangles");
   write(" + " + string(trisfields.length) + " fields");
+  write("found " + string(polygons.length) + " polygons");
+  write(" + " + string(polygonfields.length) + " fields");
 
   //unitsize(1cm);
 
@@ -112,19 +121,29 @@ void plot_fields(picture pic, string fn)
     fill(pic, (tris[i*3].x,tris[i*3].y)--(tris[i*3+1].x,tris[i*3+1].y)--(tris[i*3+2].x,tris[i*3+2].y)--cycle, trisfields.length != 0 ? color(trisfields[i][tfn]) : (red + opacity(0.5)));
   }
 
+
+  int pfn=0;
+  for(int i=0;i!=floor(polygons.length);++i)
+  {
+    guide g;
+    for(int j=0; j!=floor(polygons[i].length);++j)
+      g=g--(polygons[i][j].x, polygons[i][j].y);
+    g=g--cycle;
+    fill(pic, g, polygonfields.length != 0 ? color(polygonfields[i][pfn]) : (red + opacity(0.5)));
+  }
+
   int efn=0;
 
-  /*
   for(int i=0;i!=floor(edgs.length/2);++i)
   {
     //write(edgsfields[i][efn]);
     draw(pic, (edgs[i*2].x,edgs[i*2].y)--(edgs[i*2+1].x,edgs[i*2+1].y), linewidth(1pt)+ (edgsfields.length != 0 ? color(edgsfields[i][efn]) : black));
   }
-  */
 
   for(int i=0; i != pts.length; ++i)
     dot(pic, (pts[i].x,pts[i].y), ptsfields.length != 0 ? color(ptsfields[i][efn]) : black);
 
+/*
   for(int i=0; i != polygons.length; ++i)
   {
     guide g;
@@ -133,6 +152,7 @@ void plot_fields(picture pic, string fn)
     g = g -- cycle;
     draw(pic, g);
   }
+  */
 }
 
 int N=floor(fns.length^0.5);
@@ -142,5 +162,5 @@ for(int i=0; i!=fns.length; ++i)
   plot_fields(p, fns[i]);
   pair r = point(p,NE) - point(p,SW);
   size(p, 5cm, 5cm * r.y / r.x, point(p, SW), point(p, NE));
-  add(p.fit(), (5cm * (i % N), 5cm * floor(i / N)));
+  add(p.fit(), (5.3cm * (i % N), 5.3cm * r.y / r.x * floor(i / N)));
 } 
