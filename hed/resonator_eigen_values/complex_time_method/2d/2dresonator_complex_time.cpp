@@ -43,517 +43,209 @@
  * from solution each time. Also eigenvectors may be non-orthogonal.
  */
 
-#include <heds/solver.h>
-#include <svg.h>
 #include <iostream>
-#include <string>
-#include <vector>
+#include <sstream>
 #include <array>
 #include <cmath>
-#include <complex>
 #include <set>
 #include <limits>
-
-typedef std::complex<double> cplx;
-
-
-struct resonator_common
-{
-  resonator_common() : E(), B() {}
-  
-  std::vector<cplx> E;
-  std::vector<cplx> B;
-  
-  double norm()
-  {
-    double n2(.0);
-    for(const auto& e : E)
-      n2 = std::max(n2, std::norm(e));
-    for(const auto& b : B)
-      n2 = std::max(n2, std::norm(b));
-    n2 = 1.0 / sqrt(n2);
-    for(auto& e : E)
-      e *= n2;
-    for(auto& b : B)
-      b *= n2;
-    return log(n2);
-  }
-};
-
-struct structured_resonator : public resonator_common
-{
-  structured_resonator() : resonator_common(), nx(0), ny(0), lx(.0), ly(.0) {}
-
-  structured_resonator(int _nx, int _ny, double _lx, double _ly) : resonator_common(), nx(_nx), ny(_ny), lx(_lx), ly(_ly)
-  {
-    B.resize(nx*ny);
-    E.resize((nx+1)*ny + (ny+1)*nx); //say Ey goes first ny*(nx+1) entries, then goes Ex - (ny+1)*nx entries
-  }
-  int nx;
-  int ny;
-  double lx;
-  double ly;
-   
-
-  
-  double step(const cplx& dt)
-  {
-    double dx=lx/(double) nx;
-    double dy=ly/(double) ny;
-    double dxdy = dx*dy;
-
-    //first do Ey
-    for(int i(0); i != (nx+1)*ny; i++)
-    {
-      int ix = i % (nx+1);
-      if(ix==0 || ix == nx)
-        continue;
-      int iy = i / (nx+1);
-      E[i] += (B[ix-1+iy*nx] - B[ix+iy*nx]) / dx * dt;
-    }
-    //now Ex
-    for(int _i((nx+1)*ny); _i != E.size(); _i++)
-    {
-      int i=_i-(nx+1)*ny;
-      int iy = i / nx;
-      if(iy==0 || iy == ny)
-        continue;
-      int ix = i % nx;
-      E[_i] += (B[ix+iy*nx] - B[ix+(iy-1)*nx]) / dy * dt;
-    }
-    
-    //zero
-    for(int i=0; i!=nx; i++)
-    {
-      E[(nx+1)*ny+i]=cplx(.0, .0);
-      E[(nx+1)*ny+i+ny*nx]=cplx(.0, .0);
-    }
-    for(int i=0; i!=ny; i++)
-    {
-      E[i*(nx+1)]=cplx(.0, .0);
-      E[i*(nx+1)+nx]=cplx(.0, .0);
-    }
-    
-    for(int i(0); i != B.size(); i++)
-    {
-      int ix = i % nx;
-      int iy = i / nx;
-      const cplx* Ey = &E.data()[0];
-      const cplx* Ex = &E.data()[(nx+1)*ny];
-      B[i] += (
-              (Ey[ix+iy*(nx+1)] - Ey[ix+1+iy*(nx+1)]) * dy + 
-              (-Ex[ix+iy*nx] + Ex[ix+(iy+1)*nx]) * dx
-              ) / dxdy * dt;
-    }
-    
-    return norm() / dt.imag();
-    
-  }
-  
-  
-  structured_resonator& operator -= (const structured_resonator& r)
-  {
-    
-    double dx=lx/(double) nx;
-    double dy=ly/(double) ny;
-    double dxdy = dx*dy;
-    cplx k(.0, .0);
-    for(int i(1); i!= E.size()-1; i++)
-      k += E[i] * r.E[i] * dxdy;
-    for(int i(0); i!= B.size(); i++)
-      k -= B[i] * r.B[i] * dxdy;
-    
-    cplx n(.0, .0);
-    for(int i(1); i!= E.size()-1; i++)
-      n += r.E[i] * r.E[i] * dxdy;
-    for(int i(0); i!= B.size(); i++)
-      n -= r.B[i] * r.B[i] * dxdy;
-    
-    k /= n;
-    for(int i(0); i!= E.size(); i++)
-      E[i] -= k * r.E[i];
-    for(int i(0); i!= B.size(); i++)
-      B[i] -= k * r.B[i];
-    
-    return *this;
-  }  
-  
-  
-  structured_resonator& operator = (const structured_resonator& r)
-  {
-    nx=r.nx;
-    ny=r.ny;
-    lx=r.lx;
-    ly=r.ly;
-    
-    E.clear();
-    B.clear();
-    
-    for(auto& e : r.E)
-      E.emplace_back(e);
-    for(auto& b : r.B)
-      B.emplace_back(b);
-    return *this;
-  }
-  
-};
-
-struct unstructured_resonator : public resonator_common
-{
-  unstructured_resonator() : resonator_common(), m(), wgts(), hedsol() {}
-  
-  unstructured_resonator(const std::string& input_geo_file, double seed=7.0) : resonator_common(), m(), wgts(), hedsol(), bndry()
-  {
-    std::vector<std::vector<point>> contours;
-    svg::importall(input_geo_file, contours, 0.1);
-    
-    std::ofstream of;
-
-    for(const auto& c : contours)
-    {
-      m.contours.push_back(POLY());
-      for(const auto& pt : c)
-        m.contours.back().points.push_back(newXY(pt.x, pt.y));
-    }
-
-    m.seed_geometry(seed);
-    
-    of.open("sg.debug", std::ios_base::app);
-    std::cout << "seed geometry is done\n";
-    m.seed_volume(seed);
-    for(auto n : m.nodes)
-      of << *n;
-    of.close();
-
-    std::cout << "seed volume is done\n";
-    m.triangulate();
-    std::cout << "triangulate is done\n";
-
-    of.open("mesh.debug");
-    of.close();
-    for(int i=0; i!=7; i++)
-    {
-      for(int j=0; j!=7; j++)
-        m.improve_seeding(seed,seed*0.1);
-      m.clear_mesh();
-      m.triangulate();
-      m.print_quality();
-    }
-
-    for(size_t p_i(0); p_i != m.nodes.size(); p_i++)
-    {
-      auto p = m.nodes[p_i];
-      std::cout << "* " << p_i << " * " << p->edges.size() << ' ';
-      for(auto e : p->edges)
-        std::cout << e->id << ' ';
-      std::cout << std::endl;
-    }
-
-    of.open("mesh.debug", std::ios_base::app);
-    //remove extra triangles
-    
-    {
-      POLY resonator_poly;
-      for(auto pt : m.contours[0].points)
-        resonator_poly.points.push_back(newXY(pt->x, pt->y));
-      resonator_poly.fill_tree();
-
-      ssize_t t_i = m.triangles.size() - 1;
-      for(; t_i != -1; t_i--)
-      {
-        XY c = m.triangles[t_i]->centroid();
-        if(resonator_poly.is_inside(c))
-          of << c << " -1" << '\n';
-        else
-          of << c << " 1" << '\n';
-
-        if(!resonator_poly.is_inside(c))
-        {
-          std::array<XY*,3> tpts{{m.triangles[t_i]->p1, m.triangles[t_i]->p2, m.triangles[t_i]->p3}};
-          for(auto pt : tpts)
-          {
-            for(ssize_t tt_i(pt->tris.size() - 1); tt_i != -1; tt_i--)
-            {
-              if(pt->tris[tt_i] == m.triangles[t_i])
-                pt->tris.erase(pt->tris.begin()+tt_i);
-            }
-          }
-          //delete m.triangles[t_i];
-          m.triangles.erase(m.triangles.begin() + t_i);
-        }
-      }
-      for(ssize_t n_i(m.nodes.size()-1); n_i != -1; n_i--)
-      {
-        if(m.nodes[n_i]->tris.size() == 0)
-          m.nodes.erase(m.nodes.begin() + n_i);
-      }
-    }
-    
-    of.close();
-
-    
-    for(size_t p_i(0); p_i != m.nodes.size(); p_i++)
-    {
-      auto p = m.nodes[p_i];
-      std::cout << "% " << p_i << " % " << p->edges.size() << ' ';
-      for(auto e : p->edges)
-        std::cout << e->id << ' ';
-      std::cout << std::endl;
-    }
-      
-    m.orient();
-    std::cout << "orient is done\n";
-
-    m.build_edges();
-    std::cout << "edges are built\n";
-    m.fill_ids();
-    std::cout << "ids are added to elements\n";
-
-    of.open("mesh.debug", std::ios_base::app);
-    for(size_t n_id=0; n_id != m.nodes.size(); n_id++)
-    {
-      //std::cout << n_id << std::endl;
-      of << *(m.nodes[n_id]) << " " << (n_id==54 ? -1 : 0) << '\n';
-    }
-    size_t ntimes54(0);
-    for(size_t e_id=0; e_id != m.edges.size(); e_id++)
-    {
-      //std::cout << e_id << std::endl;
-      of << *(m.edges[e_id]) << " " << (e_id==275 || e_id==276 ? -1 : 0) << '\n';
-    }
-    for(size_t t_id=0; t_id != m.triangles.size(); t_id++)
-    {
-      //std::cout << t_id << std::endl;
-      of << *(m.triangles[t_id]) << " " << (t_id==165 || t_id==178 || t_id==181 ? -1 : 0) << '\n';
-    }
-    
-    for(auto& fe : m.fixed_edges)
-      of << IEDGE(fe[0], fe[1]) << " 1" << '\n';
-    of.close();
-    
-    calculate_weights(&wgts, &m);
-    std::cout << "weights calculated\n";
-    
-    hedsol.m = &m;
-    hedsol.w = &wgts;
-    
-    //hedsol.extract_contour_edges();
-    
-    E.resize(m.edges.size());
-    B.resize(m.triangles.size());
-    
-    for(auto& e : E)
-      e = cplx(.0, .0);
-    for(auto& b : B)
-      b = cplx(.0, .0);
-  }
-
-  mesh m;
-  weights wgts;
-  hed_data hedsol;
-  
-  std::vector<size_t> bndry;
-  
-  double step(const cplx& dt)
-  {
-    const weights& w = wgts;
-    for(int i(0); i != E.size(); i++)
-    {
-      const ssize_t eid = i; // = m.edges[i].id;
-      const ssize_t ir = m.edges[eid]->t1 ? m.edges[eid]->t1->id : -1;
-      const ssize_t il = m.edges[eid]->t2 ? m.edges[eid]->t2->id : -1;
-      E[i] -= ((ir == -1 ? hed_data_type(.0) : B[ir]) -
-               (il == -1 ? hed_data_type(.0) : B[il])) * w.edgs[i][1] * dt;
-    }
-    
-    for(size_t zero_e_id : bndry)
-      E[zero_e_id] = cplx(.0, .0);
-    
-    for(int i(0); i != B.size(); i++)
-    {
-      const ssize_t tid = i; // = m.triangles[i].id;
-      cplx db(.0, .0);
-      for(size_t eid_local(0); eid_local != 3; eid_local++)
-      {
-        const size_t eid = m.triangles[tid]->edges[eid_local]->id;
-        db += (m.edges[eid]->t1 == m.triangles[tid] ? hed_data_type(1.0) : hed_data_type(-1.0))
-               * E[eid] * w.edgs[eid][0]; // keep same orientation of edge as triangle have
-      }
-      B[i] += db * dt * w.tris[i][0];
-    }
-
-    return norm() / dt.imag();
-  }
-  
-  unstructured_resonator& operator -= (const unstructured_resonator& r)
-  {
-    cplx k(.0, .0);
-    for(int i(1); i!= E.size()-1; i++)
-      k += E[i] * r.E[i] * wgts.edgs[i][0] / wgts.edgs[i][1];
-    for(int i(0); i!= B.size(); i++)
-      k -= B[i] * r.B[i] / wgts.tris[i][0];
-    
-    cplx n(.0, .0);
-    for(int i(1); i!= E.size()-1; i++)
-      n += r.E[i] * r.E[i] * wgts.edgs[i][0] / wgts.edgs[i][1];
-    for(int i(0); i!= B.size(); i++)
-      n -= r.B[i] * r.B[i] / wgts.tris[i][0];
-    
-    k /= n;
-    for(int i(0); i!= E.size(); i++)
-      E[i] -= k * r.E[i];
-    for(int i(0); i!= B.size(); i++)
-      B[i] -= k * r.B[i];
-    
-    return *this;
-  }
-  
-  unstructured_resonator& operator = (const unstructured_resonator& r)
-  {
-    wgts = r.wgts;
-    m = r.m;
-    
-    E.clear();
-    B.clear();
-    
-    hedsol.m = &m;
-    hedsol.w = &wgts;
-    
-    //hedsol.extract_contour_edges();
-    
-    for(auto& e : r.E)
-      E.emplace_back(e);
-    for(auto& b : r.B)
-      B.emplace_back(b);
-    return *this;
-  }
-};
-
-std::ostream& operator << (std::ostream& os, const unstructured_resonator& r)
-{
-  os << r.E.size() << '\n';
-  for(const auto& e : r.E)
-    os << e.real() << '\t' << e.imag() << '\n';
-  os << r.B.size() << '\n';
-  for(const auto& b : r.B)
-    os << b.real() << '\t' << b.imag() << '\n';
-  return os;
-}
+#include <assert.h>
+#include <algorithm>
+#include "resonators.h"
 
 int main(int argc, char* argv[])
 {
-  #define UNSTRUCTURED
+  /*
+  resonator_base* SR= new structured_resonator(10,10,10.,10.);
+  resonator_base* UR = new unstructured_resonator("70x101resonator.svg",10);
+  SR->withdraw(UR);
+  */
   
-  #ifdef UNSTRUCTURED
-  std::string filename="u_resonator.svg";
-  if(argc>2)
-    filename=std::string(argv[2]);
-  unstructured_resonator r(filename, 13.0);
-  
-  std::cout << "contour edges extracted\n";
-  
-  std::vector<double> edg_mask;
-  edg_mask.resize(r.m.edges.size());
-  for(int i=0; i!=r.m.edges.size(); i++)
-    edg_mask[i] = .0;
-  
-  for(size_t i(0); i != r.hedsol.contour_edges.size(); i++)
+  if(argc==2 && std::string(argv[1]) == std::string("-h"))
   {
-    for(size_t j(0); j != r.hedsol.contour_edges[i].size(); j++)
-      edg_mask[r.hedsol.contour_edges[i][j]] = (double) (i + 1) / (double) r.hedsol.contour_edges.size();
+    std::cout << "./find_2d_eigen mode=[UNSTRUCTURED/STRUCTURED/ANALYTIC, UNSTRUCTURED is default] [options]\n";
+    std::cout << "for unstructured opts are: N=<number_of_steps> geo=\"<filename>\" seed=<edge seeding value> dtf=<dt factor - i.e. dt = dtf * min_edge>\n";
+    std::cout << "for   structured opts are: N=<number_of_steps> lx=<size of resonator along x> ly=<size of resonator along y> nx=<number of divisions along x> ny=<number of divisions along y> dt = dtf * min_edge>\n";
+    std::cout << "for     analytic opts are: lx=<size of resonator along x> ly=<size of resonator along y>\n";
+    std::cout << "if you do not want all modes to be found set allmodes=no, default is allmodes=yes, NOTE: ANALYTIC run will find only half of electromagneitc modes with same sign of eigenvalue\n";
+    std::cout << "EXAMPLES:\n" << "\t./find_2d_eigen mode=UNSTRUCTURED allmodes=no N=3000 geo=70x101resonator.svg dtf=0.1 seed=13.0 output=ulambdas.dat\n" <<
+    "\t./find_2d_eigen mode=STRUCTURED allmodes=no N=3000 lx=101 ly=70 nx=11 ny=8 dtf=0.1 output=slambdas.dat\n" <<
+    "\t./find_2d_eigen mode=ANALYTIC lx=101 ly=70 nx=11 ny=8 output=alambdas.dat\n";
+    return 0;
   }
+
+  enum erun_type {UNSTRUCTURED,
+                  STRUCTURED,
+                  ANALYTIC};
   
   
-  //test copy of unstructured_resonator object
-  {
-    unstructured_resonator r2;
-    r2=r;
-    for(size_t i(0); i!= r.wgts.tris.size(); i++)
-    {
-      if(r.wgts.tris[i][0] != r2.wgts.tris[i][0])
-      {
-        std::cerr << "copy of resonators failed" << std::endl;
-        return -1;
-      }
+  std::string filename="70x101resonator.svg";
+  std::string lfilename="lambdas.dat";
+  int n;
+  double lx=101.;
+  double ly=70.;
+  int nx=11;
+  int ny=8;
+  double seed=13.;
+  double dtf=0.05;
+  std::string all_modes="yes";
+  
+  erun_type run_type = UNSTRUCTURED;
+  
+  std::string mode;
+  
+  #define PARSE(ARG) if(name == #ARG) { sval >> ARG; continue;}
+	#define PARSE2(ARG, VAR) if(name == #ARG) { sval >> VAR; continue;}
+	for(int i=1;i<argc;i++)
+	{
+		std::string inp = std::string(argv[i]);
+		size_t pos = inp.find("=");
+		if(pos == std::string::npos)
+			printf("you specified parameter wrong way use <name>=<value> format. NOTE: no \'-\' and spaces\n");
+		else
+		{
+			std::string name = inp.substr(0,pos);
+			std::stringstream sval;
+			sval << inp.substr(pos+1,std::string::npos);
+			printf("parameter[%d] has name %s and value %s\n",i-1,name.c_str(), sval.str().c_str());
+			PARSE2(geo, filename);
+			PARSE2(output, lfilename);
+			PARSE2(N,n);
+			PARSE(dtf);
+			PARSE(lx);
+			PARSE(ly);
+			PARSE(nx);
+			PARSE(ny);
+      PARSE(mode);
+      PARSE2(allmodes, all_modes);
     }
-    
-    std::cout << "so far so good!" << std::endl;
   }
-  
-  std::vector<size_t> outer_edges;
-  for(size_t e_i(0); e_i != r.m.edges.size(); e_i++)
+  if(mode=="UNSTRUCTURED")
+    run_type = UNSTRUCTURED;
+  else if(mode=="STRUCTURED")
+    run_type = STRUCTURED;
+  else if(mode=="ANALYTIC")
+    run_type = ANALYTIC;
+  else
   {
-    auto e = r.m.edges[e_i];
-    if(e->t1 == nullptr || e->t2 == nullptr)
-      outer_edges.emplace_back(e_i);
+    std::cerr << "ERROR: unknown mode\n";
+    return -1;
   }
-  
-  r.bndry = outer_edges;
-  
+
+  if(run_type == ANALYTIC)
   {
-    std::ofstream of("mesh.debug", std::ios_base::app);
-    for(auto e_i : r.bndry)
-      of << *r.m.edges[e_i] << ' ' << -1 << '\n';
-    of.close();
+    std::vector<double> kx;
+    std::vector<double> ky;
+
+    for(int i=0; i!=nx; i++)
+      kx.push_back((double) i * M_PI / lx);
+
+    for(int i=0; i!=ny; i++)
+      ky.push_back((double) i * M_PI / ly);
+
+    std::vector<double> w;
+    for(int i(0); i != nx; i++)
+    {
+      for(int j(0); j != ny; j++)
+        w.push_back(sqrt(kx[i] * kx[i] + ky[j] * ky[j]));
+    }
+
+    std::sort(w.begin(), w.end(), [](const double& a, const double& b){return a > b;});
+    std::cout << w.size() << '\n';
+    for(auto _w : w)
+      std::cout << -_w << '\n';
+
+    std::ofstream lf(lfilename.c_str());
+    lf << w.size() << '\n';
+    for(auto _w : w)
+      lf << -_w << '\n';
+    lf.close();
+    return 0;
   }
+
+  system((std::string("mkdir -p ") + lfilename + std::string(".files")).c_str());
+
+  resonator_base* r;
   
   double min_edge(std::numeric_limits<double>::max());
-  for(auto e_ptr : r.m.edges)
+
+  int num_modes(0);
+
+  if(run_type == UNSTRUCTURED)
   {
-    double x = e_ptr->p1->x - e_ptr->p2->x;
-    double y = e_ptr->p1->y - e_ptr->p2->y;
-    min_edge = std::min(min_edge, sqrt(x * x + y * y));
+    r = new unstructured_resonator(filename, seed);
+    unstructured_resonator* ur = (unstructured_resonator*)r;
+    
+    for(auto e_ptr : ur->m.edges)
+    {
+      double x = e_ptr->p1->x - e_ptr->p2->x;
+      double y = e_ptr->p1->y - e_ptr->p2->y;
+      min_edge = std::min(min_edge, sqrt(x * x + y * y));
+    }
+    num_modes = ur->B.size() + ur->E.size() - ur->bndry.size();
   }
-  #else
-  structured_resonator r(11, 8, 101., 70.);
-  double min_edge = std::min(r.lx/(double) r.nx, r.ly/(double) r.ny);
-  std::vector<size_t> outer_edges((r.nx+r.ny)*2);
-  #endif
+  else if(run_type == STRUCTURED)
+  {
+    r = new structured_resonator(nx, ny, lx, ly);
+    structured_resonator* sr = (structured_resonator*)r;
+
+    min_edge = std::min(sr->lx/(double) sr->nx, sr->ly/(double) sr->ny);
+    
+    num_modes = sr->B.size() + sr->E.size() - (sr->nx + sr->ny) * 2;
+  }
+  std::cout << "all modes is " << all_modes << '\n';
+  if(all_modes == std::string("no")) // only electromagnetic modes with same sign of eigen value will be found
+    num_modes = r->B.size();
   
-  int n=argc >= 2 ? atoi(argv[1]) : 0;
-  #ifdef UNSTRUCTURED
-  cplx dt(.0, (argc>3 ? atof(argv[3]) : 0.05) * min_edge);
-  #else
-  cplx dt(.0, (argc>=3 ? atof(argv[2]) : 0.05) * min_edge);
-  #endif
+  cplx dt;
+  if(run_type == UNSTRUCTURED)
+    dt = cplx(.0, dtf * min_edge);
+  else if(run_type == STRUCTURED)
+    dt = cplx(.0, dtf * min_edge);
+  
   std::cerr << "doing " << n << " steps\n";
   std::cerr << "with dt=" << dt << '\n';
   double l(.0);
   
   
   std::cout  << "filling in random values for e\n";
-  for(auto& b : r.B)
+  for(auto& b : r->B)
     b = cplx(.0, 1.0+(double) rand() / (double) RAND_MAX);
-  //for(auto& b : r.B)
-  //  b = cplx(.0, (double) rand() / (double) RAND_MAX);
+
   std::cout << "\tdone\n";
   
   
   std::cout << "preparing resonators\n";
   
   
-  #ifdef UNSTRUCTURED
-  //std::vector<unstructured_resonator> rs(r.B.size()+r.E.size()-outer_edges.size());
-  std::vector<unstructured_resonator> rs(r.B.size());
-  #else
-  //std::vector<structured_resonator> rs(r.B.size()+r.E.size()-outer_edges.size());
-  std::vector<structured_resonator> rs(r.B.size());
-  #endif
-  for(int i = 0; i != rs.size(); i++)
+  std::vector<resonator_base*> rs;
+  
+  for(int i = 0; i != num_modes; i++)
   {
-    rs[i] = r;
-    #ifdef UNSTRUCTURED
-    rs[i].bndry = r.bndry;
-    #endif
-    rs[i].E = r.E;
-    rs[i].B = r.B;
+    if(run_type == UNSTRUCTURED)
+    {
+      unstructured_resonator* ur=(unstructured_resonator*)r;
+      unstructured_resonator* r_new = new unstructured_resonator();
+      *r_new = *ur;
+      r_new->bndry = ur->bndry;
+      r_new->E = ur->E;
+      r_new->B = ur->B;
+      rs.push_back(r_new);
+    }
+    else if(run_type == STRUCTURED)
+    {
+      structured_resonator* sr=(structured_resonator*)r;
+      structured_resonator* r_new = new structured_resonator();
+      *r_new = *sr;
+      r_new->E = sr->E;
+      r_new->B = sr->B;
+      rs.push_back(r_new);
+    }
   }
   std::cout << "\tdone\n";
 
   std::vector<double> lambdas(rs.size());
   
-  std::ofstream lf("lambdas.dat");
-  lf << lambdas.size() << '\n';
 
 //#define SINGLE_THREADED
 
@@ -563,8 +255,8 @@ int main(int argc, char* argv[])
     for(int j = 0; j < rs.size(); j++)
     {
       for(int q = 0; q < j; q++)
-        rs[j] -= rs[q];
-      lambdas[j] = rs[j].step(dt);
+        rs[j]->withdraw(rs[q]);
+      lambdas[j] = rs[j]->step(dt);
     }
   }
 #endif
@@ -575,84 +267,85 @@ int main(int argc, char* argv[])
     for(int j = 0; j < rs.size(); j++)
     {
       for(int q = 0; q < j; q++)
-        rs[j] -= rs[q];
-      lambdas[j] = rs[j].step(dt);
+        rs[j]->withdraw(rs[q]);
+      lambdas[j] = rs[j]->step(dt);
     }
 #else
     #pragma omp parallel for
     for(int j = 0; j < rs.size(); j++)
-      lambdas[j] = rs[j].step(dt);
+      lambdas[j] = rs[j]->step(dt);
 
     #pragma omp parallel for
     for(int j = 0; j < rs.size(); j++)
     {
       for(int q = 0; q < j; q++)
-        rs[j] -= rs[q];
+        rs[j]->withdraw(rs[q]);
     }
 #endif
-
-    //for(int j = 0; j < rs.size(); j++)
-    //  lf << lambdas[j] << '\n';
 
     std::cout << i << '/' << n << '\n';
   }
   
+  //dump eigen values
+  std::ofstream lf(lfilename.c_str());
+  lf << lambdas.size() << '\n';
   for(int j = 0; j < rs.size(); j++)
     lf << lambdas[j] << '\n';
-
   lf.close();
   
   for(const auto& _l : lambdas)
     std::cout << _l << '\n';
  
-  #ifdef UNSTRUCTURED
+
+  //dump eigen vectors
+  if(run_type == UNSTRUCTURED)
   {
     for(size_t rsi(0); rsi != rs.size(); rsi++)
     {
-      std::ofstream of(("fields/fields"+std::to_string(rsi)+".debug").c_str());//, std::ios_base::app);
-      for(size_t e_i(0); e_i != rs[rsi].m.edges.size(); e_i++)
-        of << *rs[rsi].m.edges[e_i] << ' ' << rs[rsi].E[e_i].real() << '\n';
-      for(size_t t_i(0); t_i != rs[rsi].m.triangles.size(); t_i++)
-        of << *rs[rsi].m.triangles[t_i] << ' ' << rs[rsi].B[t_i].imag() << '\n';
+      unstructured_resonator* ur = (unstructured_resonator*)rs[rsi];
+      std::ofstream of((lfilename+".files/fields"+std::to_string(rsi)+".debug").c_str());//, std::ios_base::app);
+      for(size_t e_i(0); e_i != ur->m.edges.size(); e_i++)
+        of << *ur->m.edges[e_i] << ' ' << ur->E[e_i].real() << '\n';
+      for(size_t t_i(0); t_i != ur->m.triangles.size(); t_i++)
+        of << *ur->m.triangles[t_i] << ' ' << ur->B[t_i].imag() << '\n';
       of.close();
     }
   }
-  #else
+  else if(run_type == STRUCTURED)
   {
     for(size_t rsi(0); rsi != rs.size(); rsi++)
     {
-      std::ofstream of(("fields/fields"+std::to_string(rsi)+".debug").c_str());//, std::ios_base::app);
-      double dx = rs[rsi].lx/(double) rs[rsi].nx;
-      double dy = rs[rsi].ly/(double) rs[rsi].ny;
-      for(size_t e_i(0); e_i != rs[rsi].E.size(); e_i++)
+      structured_resonator* sr = (structured_resonator*)rs[rsi];
+      std::ofstream of((lfilename+".files/fields"+std::to_string(rsi)+".debug").c_str());//, std::ios_base::app);
+      double dx = sr->lx/(double) sr->nx;
+      double dy = sr->ly/(double) sr->ny;
+      for(size_t e_i(0); e_i != sr->E.size(); e_i++)
       {
-        if(e_i < (rs[rsi].nx+1)*rs[rsi].ny)
+        if(e_i < (sr->nx+1)*sr->ny)
         {
           int i=e_i;
-          int ix = i % (rs[rsi].nx+1);
-          int iy = i / (rs[rsi].nx+1);
-          of << "e " << dx*(double)ix << ' ' << dy*(double)iy << ' ' << dx*(double)ix << ' ' << dy*(double)iy+dy << ' ' << rs[rsi].E[e_i].real() << '\n';
+          int ix = i % (sr->nx+1);
+          int iy = i / (sr->nx+1);
+          of << "e " << dx*(double)ix << ' ' << dy*(double)iy << ' ' << dx*(double)ix << ' ' << dy*(double)iy+dy << ' ' << sr->E[e_i].real() << '\n';
         }
         else
         {
-          int i = e_i - (rs[rsi].nx+1)*rs[rsi].ny;
-          int ix = i % rs[rsi].nx;
-          int iy = i / rs[rsi].nx;
-          of << "e " << dx*(double)ix << ' ' << dy*(double)iy << ' ' << dx*(double)ix+dx << ' ' << dy*(double)iy << ' ' << rs[rsi].E[e_i].real() << '\n';
+          int i = e_i - (sr->nx+1)*sr->ny;
+          int ix = i % sr->nx;
+          int iy = i / sr->nx;
+          of << "e " << dx*(double)ix << ' ' << dy*(double)iy << ' ' << dx*(double)ix+dx << ' ' << dy*(double)iy << ' ' << sr->E[e_i].real() << '\n';
         }
       }
-      for(size_t t_i(0); t_i != rs[rsi].B.size(); t_i++)
+      for(size_t t_i(0); t_i != sr->B.size(); t_i++)
       {
-        int ix = t_i % rs[rsi].nx;
-        int iy = t_i / rs[rsi].nx;
+        int ix = t_i % sr->nx;
+        int iy = t_i / sr->nx;
         of << "box " << (double)ix*dx << ' ' << (double)iy*dy << ' '
                    << (double)ix*dx+dx << ' ' << (double)iy*dy+dy << ' '
-                   << rs[rsi].B[t_i].imag() << '\n';
+                   << sr->B[t_i].imag() << '\n';
       }
       of.close();
     }
   }
-  #endif
-  
   return 0;
 }
