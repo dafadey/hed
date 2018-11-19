@@ -10,6 +10,52 @@ struct center_node
   const ITRIANGLE* tri;
 };
 
+void static remove_hanging(std::vector<std::set<const ITRIANGLE*>>& pre_output)
+{
+  // rebuild part_map
+  std::map<const ITRIANGLE*, size_t> part_map;
+  
+  for(size_t part_id(0); part_id != pre_output.size(); part_id++)
+  {
+    const auto& part = pre_output[part_id];
+    for(const ITRIANGLE* t : part)
+      part_map[t] = part_id;
+  }
+  
+  for(size_t part_id(0); part_id != pre_output.size(); part_id++)
+  {
+    auto& part = pre_output[part_id];
+    std::vector<std::pair<const ITRIANGLE*,size_t>> destinations;
+    for(auto t : part)
+    {
+      std::vector<std::pair<size_t,size_t>> inc_map;
+      for(auto nbr : t->get_neighbors())
+      {
+        bool found(false);
+        for(auto& it : inc_map)
+        {
+          if(part_map[nbr]==it.first)
+          {
+            it.second++;
+            found=true;
+          }
+        }
+        if(!found)
+          inc_map.push_back(std::make_pair(part_map[nbr], 1));
+      }
+      std::sort(inc_map.begin(), inc_map.end(), [](const std::pair<size_t,size_t>& a, const std::pair<size_t,size_t>& b){ return a.second > b.second;});
+      if(inc_map[0].first != part_id && inc_map[0].second > 1)
+        destinations.push_back(std::make_pair(t, inc_map[0].first));
+    }
+    for(const auto& dest : destinations)
+    {
+      part.erase(dest.first);
+      pre_output[dest.second].insert(dest.first);
+      part_map[dest.first] = dest.second;
+    }
+  }
+}
+
 //KD partitioning
 
 static std::vector<center_node*> delam(std::set<center_node*> part, int dir = 0)
@@ -81,11 +127,20 @@ std::vector<std::vector<const ITRIANGLE*>> KDpartition(const mesh& im, int depth
   for(int i(0); i != depth; i++)
     partition(links);
   
-  std::vector<std::vector<const ITRIANGLE*>> output(links.size());
+  std::vector<std::set<const ITRIANGLE*>> pre_output(links.size());
   for(size_t i(0); i != links.size(); i++)
   {
     for(auto c : links[i])
-      output[i].push_back(c->tri);
+      pre_output[i].insert(c->tri);
+  }
+  
+  remove_hanging(pre_output);
+  
+  std::vector<std::vector<const ITRIANGLE*>> output(links.size());
+  for(size_t i(0); i != pre_output.size(); i++)
+  {
+    for(auto c : pre_output[i])
+      output[i].push_back(c);
   }
   return output;
 }
@@ -243,47 +298,9 @@ std::vector<std::vector<const ITRIANGLE*>> greedy_partition(const mesh& im, int 
     if(pre_output[part_id].size()==0)
       pre_output.erase(pre_output.begin()+part_id);
   }
+
   // remove hanging triangles
-  //  rebuild part_map
-  part_map.clear();
-  for(size_t part_id(0); part_id != pre_output.size(); part_id++)
-  {
-    const auto& part = pre_output[part_id];
-    for(const ITRIANGLE* t : part)
-      part_map[t] = part_id;
-  }
-  
-  for(size_t part_id(0); part_id != pre_output.size(); part_id++)
-  {
-    auto& part = pre_output[part_id];
-    std::vector<std::pair<const ITRIANGLE*,size_t>> destinations;
-    for(auto t : part)
-    {
-      std::vector<std::pair<size_t,size_t>> inc_map;
-      for(auto nbr : t->get_neighbors())
-      {
-        bool found(false);
-        for(auto& it : inc_map)
-        {
-          if(part_map[nbr]==it.first)
-          {
-            it.second++;
-            found=true;
-          }
-        }
-        if(!found)
-          inc_map.push_back(std::make_pair(part_map[nbr], 1));
-      }
-      std::sort(inc_map.begin(), inc_map.end(), [](const std::pair<size_t,size_t>& a, const std::pair<size_t,size_t>& b){ return a.second > b.second;});
-      if(inc_map[0].first != part_id && inc_map[0].second > 1)
-        destinations.push_back(std::make_pair(t, inc_map[0].first));
-    }
-    for(const auto& dest : destinations)
-    {
-      part.erase(dest.first);
-      pre_output[dest.second].insert(dest.first);
-    }
-  }
+  remove_hanging(pre_output);
   
   // reformat result for output
   std::vector<std::vector<const ITRIANGLE*>> output(pre_output.size());
@@ -293,5 +310,6 @@ std::vector<std::vector<const ITRIANGLE*>> greedy_partition(const mesh& im, int 
     for(auto t : part)
       output[part_id].push_back(t);
   }
+  
   return output;
 }
