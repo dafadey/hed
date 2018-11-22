@@ -1,3 +1,3 @@
 #!/bin/bash
 tools=/home/dan/tools/
-g++ test.cpp -O0 -g -I../ -L${tools}/lib/ -lmesh1 -lsvg1 -Wl,-rpath=${tools}/lib/
+g++ test.cpp -O3 -I../ -L${tools}/lib/ -lmesh1 -lsvg1 -Wl,-rpath=${tools}/lib/
