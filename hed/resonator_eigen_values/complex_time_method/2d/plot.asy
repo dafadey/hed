@@ -3,8 +3,8 @@
 string[] fns;
 
 
-for(int i=215; i>=0; --i)
-  fns.push("fields/fields"+string(i)+".debug");
+for(int i=87; i>=0; --i)
+  fns.push("slambdas.dat.files/fields"+string(i)+".debug");
 
 
 
@@ -134,11 +134,13 @@ void plot_fields(picture pic, string fn)
 
   int efn=0;
 
+/*
   for(int i=0;i!=floor(edgs.length/2);++i)
   {
     //write(edgsfields[i][efn]);
     draw(pic, (edgs[i*2].x,edgs[i*2].y)--(edgs[i*2+1].x,edgs[i*2+1].y), linewidth(1pt)+ (edgsfields.length != 0 ? color(edgsfields[i][efn]) : black));
   }
+*/
 
   for(int i=0; i != pts.length; ++i)
     dot(pic, (pts[i].x,pts[i].y), ptsfields.length != 0 ? color(ptsfields[i][efn]) : black);
