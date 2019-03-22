@@ -34,4 +34,8 @@ namespace svg
                 std::vector<std::vector<point>>& /* contours/paths*/,
                 double /* tolerance*/);
 
+  //dumps contours to svg
+  void dump(std::string /*svg file name*/,
+          std::vector<std::vector<point>>& /* contours/paths*/);
+
 };

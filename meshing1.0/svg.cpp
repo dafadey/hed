@@ -400,4 +400,40 @@ namespace svg
   }
 
 
+  void dump(std::string name, std::vector<std::vector<point>>& vec)
+  {
+    std::ofstream s(name.c_str(), std::ios_base::out);
+    //write header
+    s << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" << std::endl;
+    s << "<svg" << std::endl;
+    s << "    xmlns=\"http://www.w3.org/2000/svg\"" << std::endl; //without this superawesome line mozilla ang google-chrome cannot open the file, but inkscape can!
+    s << "    width=\"210mm\"" << std::endl;
+    s << "    height=\"297mm\"" << std::endl;
+    s << "    viewBox=\"0 0 744.09448819 1052.3622047\">" << std::endl;
+    s << "  <g>" << std::endl;
+    //write contours
+    // filled
+    /*
+        <path           style="opacity:1;fill:#3aa366;fill-opacity:0.43577983;stroke:#ff0000;stroke-width:0.99999994;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:1.00000001, 1.99999999;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 208.57143,740.93369 231.42857,0 0,87.45826 -231.42857,0 z"/>
+    */
+    // nonfilled
+    /*
+        <path       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 210.88683,741.32866 438.19888,968.92471 437.71714,741.89043 Z"/>
+    */
+    for(const auto& c : vec)
+    {
+      s << "    <path\n       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n";
+      s << "       d=\"M";
+      for(const auto& p : c)
+        s << ' ' << p.x << ',' << p.y;
+      s << " Z\"/>\n";
+    }
+    // finalize
+    s << "  </g>" << std::endl;
+    s << "</svg>" << std::endl;
+    s.close();
+  }
+
 };
