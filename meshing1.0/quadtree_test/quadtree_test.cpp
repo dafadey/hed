@@ -74,15 +74,23 @@ int main()
     }
     printf("created query points\n");
     std::vector<XY*> inside;
+    int problems(0);
     {
-      timer t("query time is: ");
+      timer t("verification time is: ");
       for(auto it = querys.begin(); it != querys.end(); it++)
       {
         if(p.is_inside(*it) != p.is_inside_simple(*it))
         {
-          inside.push_back(&(*it));
-          break;
+          //inside.push_back(&(*it));
+          problems++;
+          //break;
         }
+      }
+    }
+    {
+      timer t("fast query time is: ");
+      for(auto it = querys.begin(); it != querys.end(); it++)
+      {
         if(p.is_inside(*it))
           inside.push_back(&(*it));
       }
@@ -91,19 +99,20 @@ int main()
     fprintf(fptr,"color_fill 1.0 0.0 0.0 \n");
     for(auto it : inside)
       fprintf(fptr,"p %g %g\n", it->x, it->y);
-    printf("found %d problems\n",inside.size());
+    printf("found %d problems\n",problems);
 
   }
   fclose(fptr);
   
   
   {
-    std::string cmd = "echo file f=input(\"" + filename + "\"); > " + filename + ".asy";
+    std::system("rm -f poly.dat.asy");
+    std::string cmd = "echo \"file f=input(\\\"" + filename + "\\\").word();\" > " + filename + ".asy";
     printf("running : %s\n",cmd.c_str());
     std::system(cmd.c_str());
     //target_l
     std::stringstream ss;
-    ss << "echo  real s0=" << 0.1 << "; >> " << filename << ".asy";
+    ss << "echo  \"real s0=" << 0.1 << ";\" >> " << filename << ".asy";
     cmd = ss.str();
     printf("running : %s\n",cmd.c_str());
     std::system(cmd.c_str());
@@ -113,18 +122,6 @@ int main()
     cmd = "asy " + filename + ".asy";
     printf("running : %s\n",cmd.c_str());
     std::system(cmd.c_str());
-    //cmd = "rm " + filename + ".asy";
-    //printf("running : %s\n",cmd.c_str());
-    //std::system(cmd.c_str());
-    //cmd = "convert -density 16 " + filename + ".eps -background white -flatten " + filename + ".png";
-    //printf("running : %s\n",cmd.c_str());
-    //std::system(cmd.c_str());
-    //cmd = "rm " + filename + ".eps";
-    //printf("running : %s\n",cmd.c_str());
-    //std::system(cmd.c_str());
-    //cmd = "rm " + filename;
-    //printf("running : %s\n",cmd.c_str());
-    //std::system(cmd.c_str());
   }
   
   

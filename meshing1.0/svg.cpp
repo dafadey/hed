@@ -267,8 +267,6 @@ namespace svg
     }
   };
   
-  
-  
   static int parse_path(std::string& path_line, std::vector<point>& cont, double tol)
   {
     bz_input inp;
@@ -302,15 +300,12 @@ namespace svg
     int path_count(0);
     while(std::getline(infile, line))
     {
+      #ifdef VERBOSE
+      std::cout << "parsing line" << (inside_path ? "(inside_path) " : " ") << (inside_d ? "(inside_d, path_count"+std::to_string(path_count)+") " : " ") << line << '\n';
+      #endif
       if(line.find("<path") != std::string::npos)
       {
         inside_path = true;
-        inside_d = false;
-      }
-      if(line.find("/>") != std::string::npos && inside_path)
-      {
-        path_count++;
-        inside_path = false;
         inside_d = false;
       }
       if(inside_path && line.find("=") != std::string::npos)
@@ -320,6 +315,13 @@ namespace svg
 
       if(inside_d && path_count == poly_id)
         path_line += line;
+
+      if(line.find("/>") != std::string::npos && inside_path)
+      {
+        path_count++;
+        inside_path = false;
+        inside_d = false;
+      }
     }
     infile.close();
     #ifdef VERBOSE

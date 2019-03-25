@@ -1,4 +1,4 @@
-//file f=input("geom.dat");
+//file f=input("geom.dat").word();
 //real s0=0.0338797;
 unitsize(10cm);
 string[] data=f;
@@ -128,6 +128,8 @@ pen color(real s)
   return ((s>0)?s^0.5*red:(-s)^0.5*blue) + abs(s)*green;
 }
 
+write("elements: ",elements.length);
+
 for(int i=0;i!=elements.length;++i)
 {
   if(elements[i].fill==nullpen)
@@ -135,6 +137,8 @@ for(int i=0;i!=elements.length;++i)
   else
     filldraw(elements[i].g, elements[i].fill, elements[i].outline);
 }
+
+write("points: ",points.length);
 
 for(int i=0;i!=points.length;++i)
   filldraw(shift(points[i].pt.x,points[i].pt.y)*scale(0.001)*unitcircle, points[i].fill, points[i].outline);

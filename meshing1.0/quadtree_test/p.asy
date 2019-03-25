@@ -1,4 +1,4 @@
-//file f=input("poly.dat");
+//file f=input("poly.dat").word();
 //real s0=0.1;
 unitsize(10cm);
 string[] data=f.word();

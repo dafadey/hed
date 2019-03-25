@@ -38,29 +38,30 @@ static bool if_ray_cross_abox(const XY& p, const point& kn /*normalized directio
   return false;
 }
 
-static bool if_ray_cross_anedge(const XY& p, const point& kn /*normalized direction vector*/, const IEDGE& e)
+static double if_ray_cross_anedge(const XY& p, const point& kn /*normalized direction vector*/, const IEDGE& e)
 {
   point ortho(-kn.y, kn.x);
   double y_loc1 = (point(e.p1->x, e.p1->y) - point(p.x, p.y)) * kn;
   double y_loc2 = (point(e.p2->x, e.p2->y) - point(p.x, p.y)) * kn;
   
-  if(y_loc1 < 0 && y_loc2 < 0)
-    return false;
+  if(y_loc1 < .0 && y_loc2 < .0)
+    return -1.0;
 
   double x_loc1 = (point(e.p1->x, e.p1->y) - point(p.x, p.y)) * ortho;
   double x_loc2 = (point(e.p2->x, e.p2->y) - point(p.x, p.y)) * ortho;
 
-  if(x_loc1 * x_loc2 >= 0)
-    return false;
+  if(x_loc1 * x_loc2 > .0)
+    return -1.0;
 
-  if(y_loc1 > 0 && y_loc2 > 0)
-    return true;
+  //if(y_loc1 > .0 && y_loc2 > .0)
+  //  return true;
+  
+  const double y = (x_loc2 * y_loc1 - x_loc1 * y_loc2) / (x_loc2 - x_loc1);
 
-  //double y = (x_loc2 * y_loc1 - x_loc1 * y_loc2) / (x_loc2 - x_loc1);
-  if((x_loc2 * y_loc1 - x_loc1 * y_loc2) * (x_loc2 - x_loc1) <= 0)
-    return false;
+  if(y < .0)
+    return -1.0;
 
-  return true;
+  return y;
 }
 
 
@@ -87,18 +88,18 @@ bool POLY::is_inside_simple(XY& p) const
 {
   std::vector<IEDGE*> edges2test;
   point kn(0.0, 1.0);
-  //we have to test all edges since tree is now built
   for(auto it : this->edges)
     edges2test.emplace_back(it);
   //now all edges which should be tested with line is in edges2test
-  int count(0);
+  std::set<double> crossings; // we need this to account for degerated cases when ray crosses joint of two edges exaclty
   for(auto e : edges2test)
   {
-    if(if_ray_cross_anedge(p,kn,*e))
-      count++;
+    double res = if_ray_cross_anedge(p, kn, *e);
+    if(res >= .0)
+      crossings.insert(res);
   }
   //std::cout << count << std::endl;
-  if(count % 2 == 0)
+  if(crossings.size() % 2 == 0)
     return false;
   else
     return true;  
@@ -134,14 +135,15 @@ bool POLY::is_inside(XY& p/*, FILE* fptr*/) const
   }
 
   //now all edges which should be tested with line is in edges2test
-  int count(0);
+  std::set<double> crossings; // we need this to account for degerated cases when ray crosses joint of two edges exaclty
   for(auto e : edges2test)
   {
-    if(if_ray_cross_anedge(p,kn,*e))
-      count++;
+    double res = if_ray_cross_anedge(p, kn, *e);
+    if(res >= .0)
+      crossings.insert(res);
   }
   //std::cout << count << std::endl;
-  if(count % 2 == 0)
+  if(crossings.size() % 2 == 0)
     return false;
   else
     return true;
