@@ -56,8 +56,10 @@ static double if_ray_cross_anedge(const XY& p, const point& kn /*normalized dire
   //if(y_loc1 > .0 && y_loc2 > .0)
   //  return true;
   
-  const double y = (x_loc2 * y_loc1 - x_loc1 * y_loc2) / (x_loc2 - x_loc1);
-
+  double y = (x_loc2 * y_loc1 - x_loc1 * y_loc2) / (x_loc2 - x_loc1);
+  y = x_loc1 == .0 ? y_loc1 : y;
+  y = x_loc2 == .0 ? y_loc2 : y;
+  
   if(y < .0)
     return -1.0;
 
