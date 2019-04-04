@@ -2,6 +2,7 @@
 #include "elements.h"
 #include <set>
 #include <iostream>
+#include <cmath>
 
 //this function is not robust... when ray is close to box it will say it crosses the box
 //criterias 1 and 2 are not enough calculate if ray crosses box.
@@ -13,10 +14,10 @@ static bool if_ray_cross_abox(const XY& p, const point& kn /*normalized directio
   auto box = b.generate_box();
   double px_loc(0.0); 
   bool criteria1(false);
-  for(unsigned int i = 0; i != box.size(); i++)
+  for(unsigned int i = 0; i <= box.size(); i++)
   {
-    double x_loc = (box[i] - point(p.x, p.y)) * ortho;
-    if(px_loc * x_loc < 0)
+    double x_loc = (box[(i + box.size()) % box.size()] - point(p.x, p.y)) * ortho;
+    if(i > 0 && px_loc * x_loc <= 0.0)
     {
       criteria1 = true;
       break;
@@ -29,7 +30,7 @@ static bool if_ray_cross_abox(const XY& p, const point& kn /*normalized directio
   for(unsigned int i = 0; i != box.size(); i++)
   {
     double y_loc = (box[i] - point(p.x, p.y)) * kn;
-    if(y_loc > 0)
+    if(y_loc >= 0.0)
       criteria2 = true;
   }
   
@@ -38,6 +39,9 @@ static bool if_ray_cross_abox(const XY& p, const point& kn /*normalized directio
   return false;
 }
 
+// >= 0 returned when ray crosses an edge and returned value is a distance along kn direction
+// -1.0 is returned when ray does not cross an edge
+// -2.0 is returned in degenerated case : ray slides along edge or ray touches one of edge vertex
 static double if_ray_cross_anedge(const XY& p, const point& kn /*normalized direction vector*/, const IEDGE& e)
 {
   point ortho(-kn.y, kn.x);
@@ -52,9 +56,22 @@ static double if_ray_cross_anedge(const XY& p, const point& kn /*normalized dire
 
   if(x_loc1 * x_loc2 > .0)
     return -1.0;
+  
+  if(x_loc1 == x_loc2) // degenerated edge ( == actually means that both are strictly zero)
+  {
+    if(y_loc1 >= 0. || y_loc2 >= 0.)
+      return -2.0;
+    else
+      return -1.0;
+  }
+  
+  if(x_loc1 == .0 && y_loc1 >= .0) // vertex1 is degenerated
+    return -2.0;
 
-  //if(y_loc1 > .0 && y_loc2 > .0)
-  //  return true;
+  if(x_loc2 == .0 && y_loc2 >= .0)  // vertex2 is degenerated
+    return -2.0;
+    
+  //general case
   
   double y = (x_loc2 * y_loc1 - x_loc1 * y_loc2) / (x_loc2 - x_loc1);
   y = x_loc1 == .0 ? y_loc1 : y;
@@ -84,32 +101,61 @@ static void traverse_edgetree_with_line(const node<IEDGE>* currentnode, std::vec
   }
 }
 
-
-
-bool POLY::is_inside_simple(XY& p) const
+bool POLY::is_inside_simple(XY& p, bool verbose) const
 {
+  if(verbose)
+    std::cout << "is_inside_simple::point is (" << p.x << ", " << p.y << ")\n";
+
   std::vector<IEDGE*> edges2test;
-  point kn(0.0, 1.0);
   for(auto it : this->edges)
     edges2test.emplace_back(it);
   //now all edges which should be tested with line is in edges2test
-  std::set<double> crossings; // we need this to account for degerated cases when ray crosses joint of two edges exaclty
-  for(auto e : edges2test)
+  int crossings(0);
+  int count=0;
+  point kn(1.0, 0.0);
+  while(true)
   {
-    double res = if_ray_cross_anedge(p, kn, *e);
-    if(res >= .0)
-      crossings.insert(res);
+    crossings = 0;
+    bool degenerated(false);
+    for(auto e : edges2test)
+    {
+      double res = if_ray_cross_anedge(p, kn, *e);
+      if(res >= .0)
+        crossings++;
+      if(res == -2.0)
+        degenerated = true;
+    }
+
+    count++;
+
+    if(!degenerated || count > 100)
+      break;
+
+    if(verbose)
+    {
+      if(degenerated)
+        std::cout << "is_inside_simple::\tdegenerated case\n";
+    }
+    
+    double knx = (double) rand() / (double) RAND_MAX;
+    kn = point(knx, sqrt(1.0 - knx * knx));
   }
+  
+  if(verbose)
+  {
+    if(crossings % 2 == 0)
+      std::cout << "is_inside_simple::\tOUT\n";
+    else
+      std::cout << "is_inside_simple::\tIN\n";
+  }  
   //std::cout << count << std::endl;
-  if(crossings.size() % 2 == 0)
+  if(crossings % 2 == 0)
     return false;
   else
     return true;  
 }
 
-
-
-bool POLY::is_inside(XY& p/*, FILE* fptr*/) const
+bool POLY::is_inside(XY& p, bool verbose/*, FILE* fptr*/) const
 {
   static bool warned(false);
   point kn(1.0, 0.0);
@@ -124,64 +170,73 @@ bool POLY::is_inside(XY& p/*, FILE* fptr*/) const
     return is_inside_simple(p);
   }
 
-  std::set<IEDGE*> edges2test;
-  //select crossing line
-  std::vector<node<IEDGE>*> leaves;
-  traverse_edgetree_with_line(&(this->edgetree.master), &leaves, p, kn);
   
-  //now all leafnodes crossing line is in leaves
-  for(auto nd : leaves)
+  int crossings(0);
+  int count(0);
+  while(true)
   {
-    for(auto ed_ptr : nd->items)
-      edges2test.insert(ed_ptr);
-  }
+    std::set<IEDGE*> edges2test;
+    //select crossing line
+    std::vector<node<IEDGE>*> leaves;
+    traverse_edgetree_with_line(&(this->edgetree.master), &leaves, p, kn);
 
-  //now all edges which should be tested with line is in edges2test
-  std::set<double> crossings; // we need this to account for degerated cases when ray crosses joint of two edges exaclty
-  for(auto e : edges2test)
-  {
-    double res = if_ray_cross_anedge(p, kn, *e);
-    if(res >= .0)
-      crossings.insert(res);
+    if(verbose)
+    {
+      std::cout << "is_inside_tree::point is (" << p.x << ", " << p.y << ")\n";
+      for(auto nd : leaves)
+        std::cout << "is_inside_tree::found leaf node (" << nd->node_bounds.pmin.x << ", " << nd->node_bounds.pmin.y << ")--(" << nd->node_bounds.pmax.x << ", " << nd->node_bounds.pmax.y << "), W=" << nd->node_bounds.pmax.x - nd->node_bounds.pmin.x << ", H=" << nd->node_bounds.pmax.y - nd->node_bounds.pmin.y << "\n";
+    }
+    //now all leafnodes crossing line is in leaves
+    for(auto nd : leaves)
+    {
+      for(auto ed_ptr : nd->items)
+        edges2test.insert(ed_ptr);
+    }
+    
+    //now all edges which should be tested with line is in edges2test
+    crossings = 0;
+    bool degenerated(false);
+    for(auto e : edges2test)
+    {
+      double res = if_ray_cross_anedge(p, kn, *e);
+      if(verbose)
+        std::cout << "is_inside_tree::testing edge (" << e->p1->x << ", " << e->p1->y << ")-(" << e->p2->x << ", " << e->p2->y << "), res=" << res << "\n";
+
+      if(res >= .0)
+        crossings++;
+      if(res == -2.0)
+        degenerated = true;
+    }
+    
+    count++;
+
+    if(!degenerated || count > 100)
+      break;
+
+    if(verbose)
+    {
+      if(degenerated)
+        std::cout << "is_inside_tree::\tdegenerated case\n";
+    }
+
+    
+    double knx = (double) rand() / (double) RAND_MAX;
+    kn = point(knx, sqrt(1.0 - knx * knx));
+
   }
   //std::cout << count << std::endl;
-  if(crossings.size() % 2 == 0)
+  if(verbose)
+  {
+    if(crossings % 2 == 0)
+      std::cout << "is_inside_tree::\tOUT\n";
+    else
+      std::cout << "is_inside_tree::\tIN\n";
+  }
+
+  if(crossings % 2 == 0)
     return false;
   else
     return true;
-  
-  /*
-  bool res;
-  if(count % 2 == 0)
-    res=false;
-  else
-    res=true;
-
-  if(fptr)
-  {
-    if(res==is_inside_simple(p))
-      return res;
-
-    fprintf(fptr,"color_outline 1.0 0.0 1.0 \n");
-    fprintf(fptr,"color_no_fill \n");
-    fprintf(fptr,"outline_width 0.3 \n");
-    for(auto n : leaves)
-    {
-      fprintf(fptr, "box_fill %g %g %g %g\n", n->node_bounds.pmin.x, n->node_bounds.pmin.y, n->node_bounds.pmax.x, n->node_bounds.pmax.y);
-    }
-    double index=0;
-    for(auto e : edges2test)
-    {
-      fprintf(fptr,"color_outline %g 0.0 %g \n", index, 1.0-index);
-      index += 1.0/double(edges2test.size()-1);
-      fprintf(fptr,"outline_width %g \n", index/0.5);
-      fprintf(fptr, "e %g %g %g %g\n", e->p1->x, e->p1->y, e->p2->x, e->p2->y);
-      printf("%s\n",if_ray_cross_anedge(p,kn,*e)?"cross":"no cross");
-    }
-    printf("number of edges = %d, res=%s\n",edges2test.size(),res?"true":"false");
-  }
-  return res;
-  */
 }
 
 void POLY::fill_edges()
@@ -197,18 +252,21 @@ template<>
 bool is_inside<IEDGE>(const IEDGE& e, const bounds& b)
 {
   bounds eb;
-  get_bounds(e,eb);
+  get_bounds(e, eb);
   if(!eb.cross(b))
     return false;
-  double y_xmin = (e.p1->y * e.p2->x - e.p2->y * e.p1->x + b.pmin.x * (e.p2->y - e.p1->y)) / (e.p2->x - e.p1->x);
-  double y_xmax = (e.p1->y * e.p2->x - e.p2->y * e.p1->x + b.pmax.x * (e.p2->y - e.p1->y)) / (e.p2->x - e.p1->x);
-  double x_ymin = (e.p1->x * e.p2->y - e.p2->x * e.p1->y + b.pmin.y * (e.p2->x - e.p1->x)) / (e.p2->y - e.p1->y);
-  double x_ymax = (e.p1->x * e.p2->y - e.p2->x * e.p1->y + b.pmax.y * (e.p2->x - e.p1->x)) / (e.p2->y - e.p1->y);
-  if( (y_xmin - b.pmin.y) * (y_xmin - b.pmax.y) <= 0 ||
-      (y_xmax - b.pmin.y) * (y_xmax - b.pmax.y) <= 0 ||
-      (x_ymax - b.pmin.x) * (x_ymax - b.pmax.x) <= 0 ||
-      (x_ymax - b.pmin.x) * (x_ymax - b.pmax.x) <= 0 )
+
+  double y_xmin = (e.p1->y == e.p2->y) ? e.p1->y : (e.p1->y * e.p2->x - e.p2->y * e.p1->x + b.pmin.x * (e.p2->y - e.p1->y)) / (e.p2->x - e.p1->x);
+  double y_xmax = (e.p1->y == e.p2->y) ? e.p1->y : (e.p1->y * e.p2->x - e.p2->y * e.p1->x + b.pmax.x * (e.p2->y - e.p1->y)) / (e.p2->x - e.p1->x);
+  double x_ymin = (e.p1->x == e.p2->x) ? e.p1->x : (e.p1->x * e.p2->y - e.p2->x * e.p1->y + b.pmin.y * (e.p2->x - e.p1->x)) / (e.p2->y - e.p1->y);
+  double x_ymax = (e.p1->x == e.p2->x) ? e.p1->x : (e.p1->x * e.p2->y - e.p2->x * e.p1->y + b.pmax.y * (e.p2->x - e.p1->x)) / (e.p2->y - e.p1->y);
+
+  if( (y_xmin - b.pmin.y) * (y_xmin - b.pmax.y) <= 0.0 ||
+      (y_xmax - b.pmin.y) * (y_xmax - b.pmax.y) <= 0.0 ||
+      (x_ymax - b.pmin.x) * (x_ymax - b.pmax.x) <= 0.0 ||
+      (x_ymax - b.pmin.x) * (x_ymax - b.pmax.x) <= 0.0 )
     return true;
+
   return false;
 }
 

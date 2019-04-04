@@ -37,8 +37,8 @@ struct spatial_tree
 template <class T>
 void node<T>::fill_node(std::vector<T*> items)
 {
-  static int level(0);
-  level++;
+  //static int level(0);
+  //level++;
   //just create bounds
   // ^ y
   // |
@@ -56,21 +56,19 @@ void node<T>::fill_node(std::vector<T*> items)
   //                          x
   std::array<bounds,4> bnds;
   const bounds* nb = &(this->node_bounds);
-  point A(nb->pmax.x, nb->pmin.y);
-  point B(nb->pmin.x, nb->pmax.y);
   bnds[0].pmin = nb->pmin;
   bnds[0].pmax = (nb->pmax + nb->pmin) * 0.5;
-  bnds[2].pmin = (nb->pmin + nb->pmax) * 0.5;
+  bnds[2].pmin = bnds[0].pmax;
   bnds[2].pmax = nb->pmax;
-  bnds[1].pmin = (nb->pmin + A) * 0.5;
-  bnds[1].pmax = (nb->pmax + A) * 0.5;
-  bnds[3].pmin = (nb->pmin + B) * 0.5;
-  bnds[3].pmax = (nb->pmax + B) * 0.5;
+  bnds[1].pmin = point(bnds[0].pmax.x, nb->pmin.y);
+  bnds[1].pmax = point(nb->pmax.x, bnds[0].pmax.y);
+  bnds[3].pmin = point(nb->pmin.x, bnds[0].pmax.y);
+  bnds[3].pmax = point(bnds[0].pmax.x, nb->pmax.y);
 
   //printf("center is (%g,%g)\n",bnds[0].pmax.x,bnds[0].pmax.y);
 
   //try split
-  std::array<std::vector<T*>,4> child_items;
+  std::array<std::vector<T*>, 4> child_items;
   int all_child_items_count(0);
   for(auto item : items)
   {
@@ -85,14 +83,14 @@ void node<T>::fill_node(std::vector<T*> items)
   //  printf("child %d has %d items\n",i,child_items[i].size());
   //printf("all child items count is %d, items size is %d\n",all_child_items_count, items.size());
   //analyze
-  if(all_child_items_count >= 2 * items.size()) // 2 is empirical change it if needed
+  if(all_child_items_count >= 2 * items.size() || items.size() <= 2) // 2 is empirical change it if needed
   {
     //ok this is leaf node. mark and push all items here
     this->is_leaf = true;
     for(auto item : items)
       this->items.push_back(item);
     //printf("closing branch\n");
-    level--;
+    //level--;
     return;
   }
   else // create new nodes and call fill_node recursivelly

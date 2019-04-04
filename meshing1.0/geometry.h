@@ -6,8 +6,8 @@ struct POLY // closed poly (each point is presented only once)
 {
   std::vector<XY*> points;
   std::vector<IEDGE*> edges;
-  bool is_inside(XY&/*, FILE* = nullptr*/) const;
-  bool is_inside_simple(XY&) const;
+  bool is_inside(XY&, bool=false/*, FILE* = nullptr*/) const;
+  bool is_inside_simple(XY&, bool=false) const;
   void fill_edges();
   spatial_tree<IEDGE> edgetree;
   void fill_tree();
