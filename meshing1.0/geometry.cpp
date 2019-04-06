@@ -169,7 +169,9 @@ bool POLY::is_inside(XY& p, bool verbose/*, FILE* fptr*/) const
     }
     return is_inside_simple(p);
   }
-
+  
+  if(this->edgetree.master.is_leaf)
+    return is_inside_simple(p);
   
   int crossings(0);
   int count(0);
