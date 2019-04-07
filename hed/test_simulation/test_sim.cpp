@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <set>
 
+#define DENSITY 0.3
+
 int main()
 {
   std::vector<std::vector<point>> contours;
@@ -48,7 +50,7 @@ int main()
 	m.orient();
 	std::cout << "orient is done\n";
 	m.build_edges();
-	std::cout << "edges are built\n";
+	std::cout << "edges are built, nedges=" << m.edges.size() << "\n";
 	m.fill_ids();
 	std::cout << "ids are added to elements\n";
 	
@@ -97,7 +99,7 @@ int main()
   std::cout << "added nodes on the metal contours\n";
   // apply some electron density to those nodes inside metall
   for(auto n : nodes_inside_metal)
-    hedsol.n[n->id] = 0.3;
+    hedsol.n[n->id] = DENSITY;
   std::cout << "added electron density\n";
   
   
@@ -117,30 +119,30 @@ int main()
 	}
 
   for(size_t e_id=0; e_id != m.edges.size(); e_id++)
-    of << *(m.edges[e_id]) << " " << edg_mask[e_id];
+    of << *(m.edges[e_id]) << " " << edg_mask[e_id] << '\n';
   of.close();
 
-	hedsol.dt = 0.1;
+	hedsol.dt = 0.2;
 	hed_data_type t = .0;
 	size_t target_c_id = hedsol.contour_edges.size() - 1;
 	int step = 0;
   
   hed_data_type Tmax(200.0);
   
-  int num_digits_in_filename = ceil(log10(Tmax/hedsol.dt));
+  int num_digits_in_filename = ceil(log10(2.0*Tmax/hedsol.dt));
   
 	while(t < Tmax)
 	{
-		for(size_t j=0; j!=hedsol.contour_edges[target_c_id].size(); j++)
-		{
-			size_t e_id = hedsol.contour_edges[target_c_id][j];
-			hed_data_type dir = m.edges[e_id]->p2->x > m.edges[e_id]->p1->x ? hed_data_type(1.0) : hed_data_type(-1.0); 
-			hedsol.e[e_id] += hed_data_type(0.5) * dir * sin(t*.1) * hedsol.dt;
-		}
+    for(size_t j=0; j!=hedsol.contour_edges[target_c_id].size(); j++)
+    {
+      size_t e_id = hedsol.contour_edges[target_c_id][j];
+      hed_data_type dir = m.edges[e_id]->p2->x > m.edges[e_id]->p1->x ? hed_data_type(1.0) : hed_data_type(-1.0); 
+      hedsol.e[e_id] += hed_data_type(0.5) * dir * sin(t*.1) * hedsol.dt;
+    }
 		hedsol.calc_e();
 		hedsol.calc_h();
 		hedsol.calc_j();
-    if(step%10 == 0)
+    if(step % 10 == 0)
     {
       hed_data_type norme(.0);
       for(auto e : hedsol.e)
@@ -161,20 +163,26 @@ int main()
         return 0;
       }
       std::stringstream filename;
-      filename << "fields/fields" << std::setw(num_digits_in_filename) << std::setfill('0') << step << ".debug";
+      filename << "fields/fields" << std::setw(num_digits_in_filename) << std::setfill('0') << step;
       of.open(filename.str().c_str());
       for(size_t n_id=0; n_id != m.nodes.size(); n_id++)
-        of << *(m.nodes[n_id]) << " " << hedsol.n[n_id];
+        of << *(m.nodes[n_id]) << " " << hedsol.n[n_id] << '\n'; 
       for(size_t e_id=0; e_id != m.edges.size(); e_id++)
-        of << *(m.edges[e_id]) << " " << hedsol.e[e_id];
+        of << *(m.edges[e_id]) << " " << hedsol.e[e_id] << '\n';
       for(size_t t_id=0; t_id != m.triangles.size(); t_id++)
-        of << *(m.triangles[t_id]) << " " << hedsol.h[t_id];
+        of << *(m.triangles[t_id]) << " " << hedsol.h[t_id] << '\n';
       of.close();
     }
 		step++;
 		t += hedsol.dt;
 	}
 	
-
+  std::cout << "\n=======STATS========\n";
+  std::cout << "calculation is done on mesh with\n";
+  std::cout << '\t' << m.nodes.size() << " nodes\n";
+  std::cout << '\t' << m.edges.size() << " edges\n";
+  std::cout << '\t' << m.triangles.size() << " triangles\n";
+  std::cout << "dt = " << hedsol.dt << '\n';
+  std::cout << "density = " << DENSITY << '\n';
   return 0;
 }

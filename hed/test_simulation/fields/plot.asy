@@ -9,6 +9,7 @@ real[][] edgsfields;
 pair[] tris;
 real[][] trisfields;
 pair[][] polygons;
+real[][] polygonfields;
 for(int i=0;i!=data.length;++i)
 {
   string line=data[i];
@@ -55,6 +56,11 @@ for(int i=0;i!=data.length;++i)
 		p.push((x1, y1));
 		p.push((x1, y0));
 		polygons.push(p);
+		real[] fields;
+		for(int j=5 ; j < items.length; ++j)
+			fields.push((real) items[j]);
+		if(fields.length != 0)
+			polygonfields.push(fields);
 	}
 }
 
@@ -64,6 +70,8 @@ write("found " + string(edgs.length/2) + " edges");
 write(" + " + string(edgsfields.length) + " fields");
 write("found " + string(tris.length/3) + " triangles");
 write(" + " + string(trisfields.length) + " fields");
+write("found " + string(polygons.length/4) + " polygons");
+write(" + " + string(polygonfields.length) + " fields");
 
 pen color(real x)
 {
@@ -85,6 +93,7 @@ pen[] colorbar(int prec = 256)
 
 int tfn=0;
 
+
 for(int i=0;i!=floor(tris.length/3);++i)
 {
   fill((tris[i*3].x,tris[i*3].y)--(tris[i*3+1].x,tris[i*3+1].y)--(tris[i*3+2].x,tris[i*3+2].y)
@@ -93,14 +102,17 @@ for(int i=0;i!=floor(tris.length/3);++i)
 
 int efn=0;
 
+/*
 for(int i=0;i!=floor(edgs.length/2);++i)
 {
 	//write(edgsfields[i][efn]);
   draw((edgs[i*2].x,edgs[i*2].y)--(edgs[i*2+1].x,edgs[i*2+1].y), edgsfields.length != 0 ? color(edgsfields[i][efn]) : black);
 }
 
+
 for(int i=0; i != pts.length; ++i)
   dot((pts[i].x,pts[i].y), ptsfields.length != 0 ? color(ptsfields[i][efn]) : black);
+*/
 
 for(int i=0; i != polygons.length; ++i)
 {
@@ -108,5 +120,6 @@ for(int i=0; i != polygons.length; ++i)
 	for(int j=0; j != polygons[i].length; ++j)
 		g = g -- polygons[i][j];
 	g = g -- cycle;
-	draw(g);
+	//draw(g);
+  fill(g, polygonfields.length != 0 ? color(polygonfields[i][tfn]) : white);
 }
