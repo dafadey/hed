@@ -76,8 +76,14 @@ write(" + " + string(polygonfields.length) + " fields");
 pen color(real x)
 {
 	real s = sqrt(abs(x));
-	return (x > 0 ? red * s : red * 0) + green * x^2 + (x < 0 ? blue * s : blue * 0);
+  real r = x > 0 ? s : 0;
+  real g = x^2;
+  real b = x < 0 ? s : 0;
+//	return r * red + g * green + b * blue;
+  real gray = 0.5 + 0.5 * (g + r + b) * (r==0 ? -1.0 : 1.0);
+  return gray * red + gray * green + gray * blue;
 }
+
 
 pen[] colorbar(int prec = 256)
 {
@@ -93,12 +99,23 @@ pen[] colorbar(int prec = 256)
 
 int tfn=0;
 
+real absmax=1.23;
+
+real trimax=-100000;
+real trimin=-trimax;
 
 for(int i=0;i!=floor(tris.length/3);++i)
 {
-  fill((tris[i*3].x,tris[i*3].y)--(tris[i*3+1].x,tris[i*3+1].y)--(tris[i*3+2].x,tris[i*3+2].y)
-  --cycle, trisfields.length != 0 ? color(trisfields[i][tfn]) : white);
+  real v = trisfields[i][tfn];
+  trimax = max(trimax, v);
+  trimin = min(trimin, v);
+  pen curcolor = trisfields.length != 0 ? color(v/absmax) : white;
+  filldraw((tris[i*3].x,tris[i*3].y)--(tris[i*3+1].x,tris[i*3+1].y)--(tris[i*3+2].x,tris[i*3+2].y)
+  --cycle, curcolor, curcolor);
 }
+
+write("trimax is ", trimax);
+write("trimin is ", trimin);
 
 int efn=0;
 
@@ -114,12 +131,22 @@ for(int i=0; i != pts.length; ++i)
   dot((pts[i].x,pts[i].y), ptsfields.length != 0 ? color(ptsfields[i][efn]) : black);
 */
 
+real polymax=-100000;
+real polymin=-polymax;
+
 for(int i=0; i != polygons.length; ++i)
 {
+  real v = polygonfields[i][tfn];
+  polymax = max(polymax, v);
+  polymin = min(polymin, v);
 	guide g;
 	for(int j=0; j != polygons[i].length; ++j)
 		g = g -- polygons[i][j];
 	g = g -- cycle;
 	//draw(g);
-  fill(g, polygonfields.length != 0 ? color(polygonfields[i][tfn]) : white);
+  pen curcolor = polygonfields.length != 0 ? color(v/absmax) : white;
+  filldraw(g, curcolor, curcolor+linewidth(1));
 }
+
+write("polymax is ", polymax);
+write("polymin is ", polymin);

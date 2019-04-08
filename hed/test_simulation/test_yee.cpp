@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
   {
     // add source
     for(int i=ismin; i<ismax; i++)
-      ex[js * nx + i] += sin(t*.1) * dt;
+      ex[js * nx + i] += 0.5 * sin(t*.1) * dt;
     // upd ex, ey
     for(int j=0; j != ny; j++)
     {
@@ -186,9 +186,9 @@ int main(int argc, char* argv[])
     {
       for(int i=0; i != nx + 1; i++)
       {
-        double _n = 0.5 * (n[j * (nx + 1) + i] + n[(j + 1) * (nx + 1) + i]);
         if(n[j * (nx + 1) + i] == 0.0 || n[(j + 1) * (nx + 1) + i] == 0.0)
-          _n = 0.0;
+          continue;
+        double _n = 0.5 * (n[j * (nx + 1) + i] + n[(j + 1) * (nx + 1) + i]);
         jy[j * (nx + 1) + i] += -_n * ey[j * (nx + 1) + i] * dt;
       }
     }

@@ -6,6 +6,9 @@ string[] fns;
 for(int i=87; i>=0; --i)
   fns.push("slambdas.dat.files/fields"+string(i)+".debug");
 
+for(int i=90; i>=0; --i)
+  fns.push("ulambdas.dat.files/fields"+string(i)+".debug");
+
 
 
 /*
@@ -94,8 +97,14 @@ void plot_fields(picture pic, string fn)
 
   pen color(real x)
   {
-    real s = sqrt(abs(x));
-    return (x > 0 ? red * s : red * 0) + green * x^2 + (x < 0 ? blue * s : blue * 0);
+    real s = abs(x);
+    real r = x > 0 ? s : 0;
+    real g = x^8;
+    real b = x < 0 ? s : 0;
+  	//real gray = (r+g+b)/3;
+    //return r * red + g * green + b * blue;
+    real gray = 0.5 + 0.5 * (g + r + b) * (r==0 ? -1.0 : 1.0);
+    return gray * red + gray * green + gray * blue;
   }
 
   pen[] colorbar(int prec = 256)
