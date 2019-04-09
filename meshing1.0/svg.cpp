@@ -10,6 +10,7 @@
 #include <vector>
 #include <cmath>
 #include <limits>
+#include <iomanip>
 
 //#define VERBOSE
 
@@ -402,7 +403,7 @@ namespace svg
   }
 
 
-  void dump(std::string name, std::vector<std::vector<point>>& vec)
+  void dump(std::string name, std::vector<std::vector<point>>& vec, std::vector<std::array<unsigned char,4>>* colors)
   {
     std::ofstream s(name.c_str(), std::ios_base::out);
     //write header
@@ -424,13 +425,19 @@ namespace svg
         <path       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 210.88683,741.32866 438.19888,968.92471 437.71714,741.89043 Z"/>
     */
+    int counter(0);
     for(const auto& c : vec)
     {
-      s << "    <path\n       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n";
+      #define HEX(x) std::setw(2) << std::setfill('0') << std::hex << (int) x
+      if(colors && colors->size() > counter)
+        s << "    <path\n       style=\"fill:#" << HEX((*colors)[counter][0]) << HEX((*colors)[counter][1]) << HEX((*colors)[counter][2]) << ";fill-rule:evenodd;fill-opacity:" << (float) (*colors)[counter][3] / 255.0 << ";stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n";
+      else
+        s << "    <path\n       style=\"fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n";
       s << "       d=\"M";
       for(const auto& p : c)
         s << ' ' << p.x << ',' << p.y;
       s << " Z\"/>\n";
+      counter++;
     }
     // finalize
     s << "  </g>" << std::endl;

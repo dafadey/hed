@@ -36,6 +36,7 @@ namespace svg
 
   //dumps contours to svg
   void dump(std::string /*svg file name*/,
-          std::vector<std::vector<point>>& /* contours/paths*/);
+          std::vector<std::vector<point>>& /* contours/paths*/,
+          std::vector<std::array<unsigned char,4>>* colors = nullptr /*RGBA colors of polygons*/);
 
 };
