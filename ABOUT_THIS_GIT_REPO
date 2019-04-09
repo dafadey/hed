@@ -3,3 +3,15 @@ configured with git config receive.denyCurrentBranch updateInstead
 
 NOTE: changes are in .git after add + committ no need in push on gpuhps
 MORE: push doesnot work for this repository on gpuhps since .git/config has no remote section
+
+this repository is also tied with github (new-origin) see in .git/config
+to push to git use env
+export GIT_SSH_COMMAND='ssh -i /home/dan/.ssh/id_rsa_github'
+and
+git push --mirror git@github.com:dafadey/hed.git
+**from git config**
+...
+[remote "new-origin"]
+        url = git@github.com:dafadey/hed.git
+        fetch = +refs/heads/*:refs/remotes/new-origin/*
+...
